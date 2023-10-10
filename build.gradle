@@ -4,24 +4,36 @@ plugins {
 }
 
 group 'cn.gudqs7.idea.plugins'
-version '2.6.0'
+version '2.6.0.json'
 
 repositories {
+    mavenLocal()
+    maven { url "https://maven.aliyun.com/repository/public" }
     mavenCentral()
 }
 dependencies {
     implementation 'org.freemarker:freemarker:2.3.31'
     implementation 'com.youbenzi:MDTool:1.2.4'
-    implementation 'org.projectlombok:lombok:1.18.2'
-    annotationProcessor 'org.projectlombok:lombok:1.18.2'
+    implementation 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    implementation 'org.projectlombok:lombok:1.18.24'
+
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.15.2'
+    implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names:2.15.2'
+
 }
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
-//    version '2021.3.3'
-    version '2021.1.1'
-    updateSinceUntilBuild false
-    plugins = ['java', 'org.nik.presentation-assistant:1.0.8']
+    version = '2021.1.1'
+    downloadSources = true
+    updateSinceUntilBuild = false
+    buildSearchableOptions.enabled = false
+    plugins = ['com.intellij.java', 'org.nik.presentation-assistant:1.0.8']
 }
 
 // study from https://github.com/liuzhihang/doc-view/blob/master/build.gradle

@@ -88,6 +88,11 @@ public class ApiResolverService {
                 methodPathList.addAll(getMethodList0(psiMethod, AnnotationHolder.QNAME_OF_POST_MAPPING, HttpMethod.POST, psiClass));
                 methodPathList.addAll(getMethodList0(psiMethod, AnnotationHolder.QNAME_OF_PUT_MAPPING, HttpMethod.PUT, psiClass));
                 methodPathList.addAll(getMethodList0(psiMethod, AnnotationHolder.QNAME_OF_DELETE_MAPPING, HttpMethod.DELETE, psiClass));
+
+                methodPathList.addAll(getMethodList0(psiMethod, AnnotationHolder.QNAME_OF_GAGEWAY_GET_MAPPING, HttpMethod.GET, psiClass));
+                methodPathList.addAll(getMethodList0(psiMethod, AnnotationHolder.QNAME_OF_GAGEWAY_POST_MAPPING, HttpMethod.POST, psiClass));
+                methodPathList.addAll(getMethodList0(psiMethod, AnnotationHolder.QNAME_OF_GAGEWAY_PUT_MAPPING, HttpMethod.PUT, psiClass));
+                methodPathList.addAll(getMethodList0(psiMethod, AnnotationHolder.QNAME_OF_GAGEWAY_DELETE_MAPPING, HttpMethod.DELETE, psiClass));
             } catch (Exception e) {
                 String methodName = psiMethod.getName();
                 String methodQname = classQname + "#" + methodName;

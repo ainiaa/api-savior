@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.Function;
 
@@ -286,7 +287,7 @@ public class BaseTypeUtil {
     }
 
     private static boolean notUsingRandom() {
-        return PluginSettingHelper.getConfigItem(PluginSettingEnum.DEFAULT_NOT_RANDOM, false);
+        return PluginSettingHelper.getConfigItem(PluginSettingEnum.DEFAULT_NOT_RANDOM, true);
     }
 
     private static String randomDate(CommentInfo commentInfo) {
@@ -403,7 +404,7 @@ public class BaseTypeUtil {
             int highCode;
             int lowCode;
 
-            Random random = new Random();
+            SecureRandom random = new SecureRandom();
 
             //B0 + 0~39(16~55) 一级汉字所占区
             highCode = (176 + Math.abs(random.nextInt(39)));

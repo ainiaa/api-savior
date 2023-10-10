@@ -35,27 +35,30 @@ public class WebEnvironmentUtil {
                 ip = defaultIp;
                 return ip;
             }
-            String hostAddress = InetAddress.getLocalHost().getHostAddress();
-            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-            while (networkInterfaces.hasMoreElements()) {
-                NetworkInterface next = networkInterfaces.nextElement();
-                Enumeration<InetAddress> inetAddresses = next.getInetAddresses();
-                while (inetAddresses.hasMoreElements()) {
-                    InetAddress inetAddress = inetAddresses.nextElement();
-                    String hostAddress0 = inetAddress.getHostAddress();
-                    if (inetAddress.isLoopbackAddress() || hostAddress0.contains(":")) {
-                        continue;
-                    }
-                    if (inetAddress.isSiteLocalAddress()) {
-                        hostAddress = hostAddress0;
-                        break;
+
+            String useRealIp = PluginSettingHelper.getConfigItem(PluginSettingEnum.USE_REAL_IP);
+            if (StringUtils.isNotBlank(useRealIp)) {
+                String hostAddress = InetAddress.getLocalHost().getHostAddress();
+                Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+                while (networkInterfaces.hasMoreElements()) {
+                    NetworkInterface next = networkInterfaces.nextElement();
+                    Enumeration<InetAddress> inetAddresses = next.getInetAddresses();
+                    while (inetAddresses.hasMoreElements()) {
+                        InetAddress inetAddress = inetAddresses.nextElement();
+                        String hostAddress0 = inetAddress.getHostAddress();
+                        if (inetAddress.isLoopbackAddress() || hostAddress0.contains(":")) {
+                            continue;
+                        }
+                        if (inetAddress.isSiteLocalAddress()) {
+                            hostAddress = hostAddress0;
+                            break;
+                        }
                     }
                 }
+                ip = hostAddress;
+                return hostAddress;
             }
-            ip = hostAddress;
-            return hostAddress;
-        } catch (UnknownHostException | SocketException ignored) {
-        }
+        } catch (UnknownHostException | SocketException ignored) {}
         ip = "127.0.0.1";
         return "127.0.0.1";
     }

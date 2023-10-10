@@ -184,6 +184,19 @@ public abstract class AbstractAnnotationHolder implements AnnotationHolder {
         }
     }
 
+    protected void handleJsonProperty(CommentInfo commentInfo) {
+        boolean hasJsonPropertyAnnotation = hasAnnotation(QNAME_OF_JSON_PROPERTY);
+        if (hasJsonPropertyAnnotation) {
+            String value = getAnnotationValueByQname(QNAME_OF_JSON_PROPERTY, "value");
+            if (StringUtils.isNotBlank(value)) {
+                // 使用 jsonProperty替换原来的name
+                //commentInfo.appendToTag(MoreCommentTagEnum.JSON_FORMAT.getTag(), pattern);
+                commentInfo.appendToTag(MoreCommentTagEnum.JSON_PROPERTY.getTag(), value);
+//                commentInfo.setName(value);
+            }
+        }
+    }
+
     protected String removeJavaDocPrefix(String line) {
         return line.replaceFirst("\\*", "").trim();
     }

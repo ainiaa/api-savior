@@ -100,6 +100,8 @@ public class PsiFieldAnnotationHolderImpl extends AbstractFieldAnnotationHolder 
     }
 
     private void dealOtherAnnotation(CommentInfo commentInfo) {
+        // 处理JsonProperty注解
+        handleJsonProperty(commentInfo);
         // 处理日期注解
         handleDateFormatAnnotation(commentInfo);
         // 根据 @Valid 配置信息覆盖是否必填字段

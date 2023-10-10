@@ -70,6 +70,11 @@ public enum PluginSettingEnum {
      * 给IP设定一个默认值
      */
     DEFAULT_IP("default.ip", PluginSettingTypeEnum.STRING),
+
+    /**
+     * 是否使用本地真实ip
+     */
+    USE_REAL_IP("use.real.ip", PluginSettingTypeEnum.STRING),
     /**
      * 给URL设置一个前缀, 设置后, IP 失效; 此前缀不包含最后的 /
      */

@@ -195,7 +195,7 @@ public class PsiMethodAnnotationHolderImpl extends AbstractAnnotationHolder {
     }
 
     private void dealRequestMapping(CommentInfo commentInfo) {
-        boolean hasMappingAnnotation = hasAnyOneAnnotation(QNAME_OF_MAPPING, QNAME_OF_GET_MAPPING, QNAME_OF_POST_MAPPING, QNAME_OF_PUT_MAPPING, QNAME_OF_DELETE_MAPPING);
+        boolean hasMappingAnnotation = hasAnyOneAnnotation(QNAME_OF_MAPPING, QNAME_OF_GET_MAPPING, QNAME_OF_POST_MAPPING, QNAME_OF_PUT_MAPPING, QNAME_OF_DELETE_MAPPING, QNAME_OF_GAGEWAY_DELETE_MAPPING, QNAME_OF_GAGEWAY_GET_MAPPING, QNAME_OF_GAGEWAY_GET_MAPPING,QNAME_OF_GAGEWAY_POST_MAPPING, QNAME_OF_GAGEWAY_PUT_MAPPING);
         if (hasMappingAnnotation) {
             if (hasAnnotation(QNAME_OF_MAPPING)) {
                 List<String> path = getAnnotationListValueByQname(QNAME_OF_MAPPING, "value");
@@ -220,6 +220,11 @@ public class PsiMethodAnnotationHolderImpl extends AbstractAnnotationHolder {
             dealHttpMethod(commentInfo, QNAME_OF_GET_MAPPING, RequestMapping.Method.GET);
             dealHttpMethod(commentInfo, QNAME_OF_PUT_MAPPING, RequestMapping.Method.PUT);
             dealHttpMethod(commentInfo, QNAME_OF_DELETE_MAPPING, RequestMapping.Method.DELETE);
+
+            dealHttpMethod(commentInfo, QNAME_OF_GAGEWAY_POST_MAPPING, RequestMapping.Method.POST);
+            dealHttpMethod(commentInfo, QNAME_OF_GAGEWAY_GET_MAPPING, RequestMapping.Method.GET);
+            dealHttpMethod(commentInfo, QNAME_OF_GAGEWAY_PUT_MAPPING, RequestMapping.Method.PUT);
+            dealHttpMethod(commentInfo, QNAME_OF_GAGEWAY_DELETE_MAPPING, RequestMapping.Method.DELETE);
 
             // deal controller RequestMapping
             String controllerUrl = "/";

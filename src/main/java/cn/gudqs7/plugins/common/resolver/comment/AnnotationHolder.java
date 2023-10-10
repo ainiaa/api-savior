@@ -2,6 +2,7 @@ package cn.gudqs7.plugins.common.resolver.comment;
 
 import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.pojo.resolver.CommentInfoTag;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.intellij.psi.*;
 
 /**
@@ -21,12 +22,19 @@ public interface AnnotationHolder {
     String QNAME_OF_MAPPING = "org.springframework.web.bind.annotation.RequestMapping";
     String QNAME_OF_GET_MAPPING = "org.springframework.web.bind.annotation.GetMapping";
     String QNAME_OF_POST_MAPPING = "org.springframework.web.bind.annotation.PostMapping";
+
+    String QNAME_OF_GAGEWAY_POST_MAPPING = "com.ddmc.gateway.bg.client.annotation.HttpApiPostMapping";
+    String QNAME_OF_GAGEWAY_GET_MAPPING = "com.ddmc.gateway.bg.client.annotation.HttpApiGetMapping";
+    String QNAME_OF_GAGEWAY_PUT_MAPPING = "com.ddmc.gateway.bg.client.annotation.HttpApiPutMapping";
+    String QNAME_OF_GAGEWAY_DELETE_MAPPING = "com.ddmc.gateway.bg.client.annotation.HttpApiDeleteMapping";
+
     String QNAME_OF_PUT_MAPPING = "org.springframework.web.bind.annotation.PutMapping";
     String QNAME_OF_DELETE_MAPPING = "org.springframework.web.bind.annotation.DeleteMapping";
     String QNAME_OF_REQ_PARAM = "org.springframework.web.bind.annotation.RequestParam";
     String QNAME_OF_REQUEST_BODY = "org.springframework.web.bind.annotation.RequestBody";
     String QNAME_OF_MULTIPART_FILE = "org.springframework.web.multipart.MultipartFile";
     String QNAME_OF_JSON_FORMAT = "com.fasterxml.jackson.annotation.JsonFormat";
+    String QNAME_OF_JSON_PROPERTY = "com.fasterxml.jackson.annotation.JsonProperty";
     String QNAME_OF_DATE_TIME_FORMAT = "org.springframework.format.annotation.DateTimeFormat";
     String QNAME_OF_VALID_NOT_NULL = "javax.validation.constraints.NotNull";
     String QNAME_OF_VALID_NOT_EMPTY = "org.hibernate.validator.constraints.NotEmpty";

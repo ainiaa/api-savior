@@ -104,7 +104,7 @@ public abstract class AbstractOnRightClickSavior extends AbstractAction implemen
      */
     protected boolean methodNotHaveMapping(PsiMethod psiMethod) {
         AnnotationHolder psiMethodHolder = AnnotationHolder.getPsiMethodHolder(psiMethod);
-        return !psiMethodHolder.hasAnyOneAnnotation(AnnotationHolder.QNAME_OF_MAPPING, AnnotationHolder.QNAME_OF_GET_MAPPING, AnnotationHolder.QNAME_OF_POST_MAPPING, AnnotationHolder.QNAME_OF_PUT_MAPPING, AnnotationHolder.QNAME_OF_DELETE_MAPPING);
+        return !psiMethodHolder.hasAnyOneAnnotation(AnnotationHolder.QNAME_OF_MAPPING, AnnotationHolder.QNAME_OF_GET_MAPPING, AnnotationHolder.QNAME_OF_POST_MAPPING, AnnotationHolder.QNAME_OF_PUT_MAPPING, AnnotationHolder.QNAME_OF_DELETE_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_DELETE_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_PUT_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_GET_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_POST_MAPPING);
     }
 
     /**

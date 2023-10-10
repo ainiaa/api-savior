@@ -21,6 +21,7 @@ public enum MoreCommentTagEnum {
      * 更多注释
      */
     JSON_FORMAT("json"),
+    JSON_PROPERTY("jsonProperty"),
     DATE_FORMAT("date"),
     HIDDEN_REQUEST("hiddenRequest"),
     HIDDEN_RESPONSE("hiddenResponse"),
