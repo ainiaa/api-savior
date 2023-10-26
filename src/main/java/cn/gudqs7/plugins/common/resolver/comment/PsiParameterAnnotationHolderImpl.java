@@ -115,7 +115,7 @@ public class PsiParameterAnnotationHolderImpl extends AbstractFieldAnnotationHol
         boolean hasReqParamAnnotation = hasAnnotation(QNAME_OF_REQ_PARAM);
         if (hasReqParamAnnotation) {
             String name = getAnnotationValueByReqParam("name");
-            if (name == null) {
+            if (StringUtils.isEmpty(name)) {
                 name = getAnnotationValueByReqParam(CommentTagEnum.DEFAULT.getTag());
             }
             commentInfo.setName(name);
