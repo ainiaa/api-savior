@@ -170,7 +170,6 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
                         indicator.setText2(getProcessFinishedModelSubTitle());
                         indicator.setFraction(1f);
                         refreshProject(projectFilePath);
-                        Thread.sleep(500);
                     } catch (ProcessCanceledException canceledException) {
                         hasCancelAtomic.set(true);
                         handleCancelTask(docRootDirPath, projectFilePath);
