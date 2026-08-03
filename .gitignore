@@ -92,3 +92,7 @@ fabric.properties
 .idea
 
 *.iml
+
+# Keep PDLC workflow state under version control even when a global ignore excludes it.
+!docs/.pdlc-state/
+!docs/.pdlc-state/*.json

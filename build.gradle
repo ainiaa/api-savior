@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'cn.gudqs7.idea.plugins'
-version '2.6.1.json'
+version '2.6.2'
 
 repositories {
     mavenLocal()
@@ -14,9 +14,16 @@ repositories {
 dependencies {
     implementation 'org.freemarker:freemarker:2.3.31'
     implementation 'com.youbenzi:MDTool:1.2.4'
-    implementation 'org.projectlombok:lombok:1.18.24'
-    annotationProcessor 'org.projectlombok:lombok:1.18.24'
-    implementation 'org.projectlombok:lombok:1.18.24'
+    compileOnly 'org.projectlombok:lombok:1.18.46'
+    annotationProcessor 'org.projectlombok:lombok:1.18.46'
+
+    implementation 'commons-collections:commons-collections:3.2.2'
+    implementation 'org.apache.commons:commons-lang3:3.14.0'
+    implementation 'commons-lang:commons-lang:2.6'
+    implementation 'commons-codec:commons-codec:1.17.1'
+    implementation 'commons-io:commons-io:2.16.1'
+    implementation 'org.apache.httpcomponents:httpcore:4.4.16'
+    implementation 'com.google.code.gson:gson:2.11.0'
 
     implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
@@ -52,4 +59,29 @@ publishPlugin {
 
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
+    options.release = 11
 }
+
+tasks.register('verifyPluginRuntimeLibraries') {
+    dependsOn buildPlugin
+
+    doLast {
+        def pluginZip = file("$buildDir/distributions/${project.name}-${project.version}.zip")
+        def jarNames = zipTree(pluginZip).matching {
+            include "${project.name}/lib/*.jar"
+        }.files*.name as Set
+        def expectedJars = [
+                'commons-collections-3.2.2.jar',
+                'commons-lang3-3.14.0.jar',
+                'commons-lang-2.6.jar',
+                'commons-codec-1.17.1.jar',
+                'commons-io-2.16.1.jar',
+                'httpcore-4.4.16.jar',
+                'gson-2.11.0.jar'
+        ]
+
+        assert jarNames.containsAll(expectedJars): "Missing plugin runtime libraries: ${expectedJars - jarNames}"
+    }
+}
+
+check.dependsOn tasks.named('verifyPluginRuntimeLibraries')

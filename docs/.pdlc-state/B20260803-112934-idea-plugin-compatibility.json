@@ -1,0 +1,51 @@
+{
+  "feature_id": "B20260803-112934",
+  "feature_name": "idea-plugin-compatibility",
+  "created_at": "2026-08-03T11:29:34+08:00",
+  "current_stage": "changelog_done",
+  "run_mode": "interactive",
+  "history": [
+    {
+      "stage": "changelog",
+      "done_at": "2026-08-03T11:29:34+08:00",
+      "produced": [
+        "AGENTS.md",
+        "CHANGELOG.md"
+      ],
+      "self_audit": {
+        "passed": 3,
+        "failed": 0,
+        "manual": 0
+      },
+      "auto_decisions": [
+        {
+          "point": "文档范围",
+          "chose": "记录已完成的 IDEA 兼容性修复与验证方式",
+          "at": "2026-08-03T11:29:34+08:00"
+        }
+      ]
+    }
+  ],
+  "last_phase_result": {
+    "stage": "changelog",
+    "ok": true,
+    "advanced_to": null,
+    "checks": {},
+    "self_audit": {
+      "failed": 0
+    },
+    "blocked_reason": null,
+    "run_mode": "interactive",
+    "at": "2026-08-03T11:29:34+08:00"
+  },
+  "relations": {
+    "extends": [],
+    "depends_on": [],
+    "supersedes": [],
+    "resolves": [],
+    "conflicts_with": [],
+    "relates_to": [],
+    "_updated_at": "2026-08-03T11:29:34+08:00"
+  },
+  "next_step": null
+}
