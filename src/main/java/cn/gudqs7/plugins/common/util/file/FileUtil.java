@@ -32,17 +32,15 @@ public class FileUtil {
         if (StringUtils.isBlank(content)) {
             return;
         }
-        try {
-            FileOutputStream fileOutputStream = getFileOutputStream(parent, path);
+        try (FileOutputStream fileOutputStream = getFileOutputStream(parent, path)) {
             if (fileOutputStream == null) {
                 return;
             }
             // 此处编码应与 FreeMarker 设置的编码以及文件编码统一, 因此需要指定, 与默认编码无关
             fileOutputStream.write(content.getBytes(StandardCharsets.UTF_8));
             fileOutputStream.flush();
-            fileOutputStream.close();
         } catch (Exception e) {
-            throw new RuntimeException("writeStringToFile Error: " + e.toString());
+            throw new RuntimeException("writeStringToFile Error: " + e, e);
         }
     }
 

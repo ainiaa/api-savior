@@ -57,7 +57,11 @@ public abstract class AbstractSavior<T> extends BaseSavior {
         if (orderAnnotation2 != null) {
             order2 = PsiAnnotationUtil.getAnnotationValue(orderAnnotation2, "value", order2);
         }
-        return order - order2;
+        return compareOrderValues(order, order2);
+    }
+
+    static int compareOrderValues(int order, int order2) {
+        return Integer.compare(order, order2);
     }
 
     protected boolean filterMethod(PsiMethod method) {
