@@ -22,7 +22,11 @@ import java.util.Objects;
  */
 public class PsiTypeUtil {
 
-    public static final Map<String, PsiType[]> GENERIC_MAP = new HashMap<>();
+    private static final ThreadLocal<Map<String, PsiType[]>> GENERIC_MAP = ThreadLocal.withInitial(HashMap::new);
+
+    static Map<String, PsiType[]> genericMap() {
+        return GENERIC_MAP.get();
+    }
 
     /**
      * 提前解析类上的泛型信息到 GENERIC_MAP, 以确保后续获取泛型信息时能正确返回
@@ -37,7 +41,7 @@ public class PsiTypeUtil {
         String qualifiedName = psiClass.getQualifiedName();
         PsiType[] parameters = psiClassReferenceType.getParameters();
         if (parameters.length > 0) {
-            GENERIC_MAP.put(qualifiedName, parameters);
+            genericMap().put(qualifiedName, parameters);
         }
         PsiClassType[] extendsListTypes = psiClass.getExtendsListTypes();
         if (extendsListTypes.length > 0) {
@@ -51,7 +55,7 @@ public class PsiTypeUtil {
      * 动作结束后清除, 避免下次动作开始时代码修改造成的数据不一致
      */
     public static void clearGeneric() {
-        GENERIC_MAP.clear();
+        GENERIC_MAP.remove();
     }
 
 
@@ -330,7 +334,7 @@ public class PsiTypeUtil {
     }
 
     private static PsiType getRealPsiType0(String ownerQname, int index, Project project, PsiType defaultVal) {
-        PsiType[] psiTypes = GENERIC_MAP.get(ownerQname);
+        PsiType[] psiTypes = genericMap().get(ownerQname);
         if (psiTypes != null && psiTypes.length > 0) {
             if (index >= 0 && index <= psiTypes.length - 1) {
                 PsiType psiType = psiTypes[index];

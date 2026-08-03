@@ -1,0 +1,99 @@
+{
+  "feature_id": "B20260803-203714",
+  "feature_name": "generation-state-isolation",
+  "created_at": "2026-08-03T20:38:44+08:00",
+  "current_stage": "fix_done",
+  "run_mode": "interactive",
+  "history": [
+    {
+      "stage": "analysis",
+      "done_at": "2026-08-03T20:38:44+08:00",
+      "produced": [],
+      "self_audit": { "passed": 3, "failed": 0, "manual": 0 },
+      "auto_decisions": [
+        {
+          "point": "P0 范围",
+          "chose": "先隔离配置、解析上下文、泛型缓存和字段序号，暂不重构导出器层次",
+          "at": "2026-08-03T20:38:44+08:00"
+        }
+      ]
+    },
+    {
+      "stage": "tdd",
+      "done_at": "2026-08-03T20:41:01+08:00",
+      "produced": [
+        "src/test/java/cn/gudqs7/plugins/common/util/PluginSettingHelperTest.java",
+        "src/test/java/cn/gudqs7/plugins/common/util/IndexIncrementUtilTest.java",
+        "src/test/java/cn/gudqs7/plugins/common/util/structure/ResolverContextHolderTest.java",
+        "src/test/java/cn/gudqs7/plugins/common/util/structure/PsiTypeUtilTest.java"
+      ],
+      "self_audit": { "passed": 4, "failed": 0, "manual": 0 },
+      "auto_decisions": [
+        {
+          "point": "红灯方式",
+          "chose": "先以缺失的线程隔离访问入口触发测试编译失败，锁定泛型缓存必须成为线程范围状态",
+          "at": "2026-08-03T20:41:01+08:00"
+        }
+      ]
+    },
+    {
+      "stage": "implementation",
+      "done_at": "2026-08-03T20:42:27+08:00",
+      "produced": [
+        "src/main/java/cn/gudqs7/plugins/common/util/PluginSettingHelper.java",
+        "src/main/java/cn/gudqs7/plugins/common/util/IndexIncrementUtil.java",
+        "src/main/java/cn/gudqs7/plugins/common/util/structure/ResolverContextHolder.java",
+        "src/main/java/cn/gudqs7/plugins/common/util/structure/PsiTypeUtil.java",
+        "src/main/java/cn/gudqs7/plugins/savior/savior/base/AbstractSavior.java",
+        "src/main/java/cn/gudqs7/plugins/common/base/action/AbstractOnRightClickSavior.java",
+        "src/main/java/cn/gudqs7/plugins/common/base/action/AbstractBatchDocerSavior.java"
+      ],
+      "self_audit": { "passed": 4, "failed": 0, "manual": 0 },
+      "auto_decisions": [
+        {
+          "point": "隔离方式",
+          "chose": "采用 ThreadLocal 保持现有静态调用形式，避免在 P0 扩大为导出架构重构",
+          "at": "2026-08-03T20:42:27+08:00"
+        }
+      ]
+    },
+    {
+      "stage": "verification",
+      "done_at": "2026-08-03T20:43:31+08:00",
+      "produced": [],
+      "self_audit": { "passed": 2, "failed": 0, "manual": 0 },
+      "auto_decisions": []
+    },
+    {
+      "stage": "docs",
+      "done_at": "2026-08-03T20:43:59+08:00",
+      "produced": [
+        "docs/02_design/generation-state-isolation.md",
+        "docs/04_testing/defects/B20260803-203714-generation-state-isolation-defect.md",
+        "CHANGELOG.md"
+      ],
+      "self_audit": { "passed": 3, "failed": 0, "manual": 1 },
+      "auto_decisions": []
+    }
+  ],
+  "last_phase_result": {
+    "stage": "docs",
+    "ok": true,
+    "advanced_to": "refactor",
+    "checks": { "gradle_check": true },
+    "self_audit": { "failed": 0 },
+    "blocked_reason": null,
+    "run_mode": "interactive",
+    "at": "2026-08-03T20:43:59+08:00"
+  },
+  "relations": {
+    "extends": [],
+    "depends_on": [],
+    "supersedes": [],
+    "resolves": [],
+    "conflicts_with": [],
+    "relates_to": [],
+    "_updated_at": "2026-08-03T20:43:59+08:00"
+  },
+  "next_step": "pdlc-refactor"
+}

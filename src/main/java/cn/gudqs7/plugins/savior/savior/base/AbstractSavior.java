@@ -141,9 +141,12 @@ public abstract class AbstractSavior<T> extends BaseSavior {
         ResolverContextHolder.addData(ResolverContextHolder.ONLY_KEYS, onlyRequest);
 
         PsiParameterList parameterTypes = publicMethod.getParameterList();
-        StructureAndCommentInfo paramStructureAndCommentInfo = structureAndCommentResolver.resolveFromParameterList(parameterTypes);
-
-        ResolverContextHolder.removeAll();
+        StructureAndCommentInfo paramStructureAndCommentInfo;
+        try {
+            paramStructureAndCommentInfo = structureAndCommentResolver.resolveFromParameterList(parameterTypes);
+        } finally {
+            ResolverContextHolder.removeAll();
+        }
 
         List<String> hiddenResponse = commentInfo.getHiddenResponse();
         List<String> onlyResponse = commentInfo.getOnlyResponse();
@@ -151,9 +154,12 @@ public abstract class AbstractSavior<T> extends BaseSavior {
         ResolverContextHolder.addData(ResolverContextHolder.ONLY_KEYS, onlyResponse);
 
         PsiTypeElement returnTypeElement = publicMethod.getReturnTypeElement();
-        StructureAndCommentInfo returnStructureAndCommentInfo = structureAndCommentResolver.resolveFromReturnVal(returnTypeElement);
-
-        ResolverContextHolder.removeAll();
+        StructureAndCommentInfo returnStructureAndCommentInfo;
+        try {
+            returnStructureAndCommentInfo = structureAndCommentResolver.resolveFromReturnVal(returnTypeElement);
+        } finally {
+            ResolverContextHolder.removeAll();
+        }
 
         return getDataByStructureAndCommentInfo(
                 project, publicMethod, commentInfo, interfaceClassName,

@@ -1,20 +1,20 @@
 package cn.gudqs7.plugins.common.util;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author wq
  */
 public class IndexIncrementUtil {
 
-    private static final AtomicReference<Integer> INDEX = new AtomicReference<>(0);
+    private static final ThreadLocal<AtomicInteger> INDEX = ThreadLocal.withInitial(AtomicInteger::new);
 
     public static int getIndex() {
-        return INDEX.getAndSet(INDEX.get() + 1);
+        return INDEX.get().getAndIncrement();
     }
 
     public static void clear() {
-        INDEX.set(0);
+        INDEX.remove();
     }
 
 }

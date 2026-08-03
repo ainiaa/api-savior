@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PluginSettingHelper {
 
     private static final String CONFIG_FILE_PATH = "docer-config.properties";
-    private static final Map<String, String> CONFIG = new ConcurrentHashMap<>(16);
+    private static final ThreadLocal<Map<String, String>> CONFIG = ThreadLocal.withInitial(() -> new HashMap<>(16));
 
     /**
      * 防止不同项目复用同一个缓存, 需按项目路径来分隔
@@ -37,8 +37,10 @@ public class PluginSettingHelper {
      * @param config 配置
      */
     public static void saveConfigToCache(Map<String, String> config) {
+        Map<String, String> currentConfig = CONFIG.get();
+        currentConfig.clear();
         if (config != null) {
-            CONFIG.putAll(config);
+            currentConfig.putAll(config);
         }
     }
 
@@ -46,7 +48,7 @@ public class PluginSettingHelper {
      * 清除配置缓存
      */
     public static void clearConfigCache() {
-        CONFIG.clear();
+        CONFIG.remove();
     }
 
     /**
@@ -55,7 +57,7 @@ public class PluginSettingHelper {
      * @return boolean
      */
     public static boolean configExists() {
-        return !CONFIG.isEmpty();
+        return !CONFIG.get().isEmpty();
     }
 
     /**
@@ -134,7 +136,7 @@ public class PluginSettingHelper {
         if (configNotExists()) {
             return defaultVal;
         }
-        return CONFIG.getOrDefault(key, defaultVal);
+        return CONFIG.get().getOrDefault(key, defaultVal);
     }
 
     /**

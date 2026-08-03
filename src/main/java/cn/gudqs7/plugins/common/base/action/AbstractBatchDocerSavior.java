@@ -4,6 +4,7 @@ import cn.gudqs7.plugins.common.enums.MoreCommentTagEnum;
 import cn.gudqs7.plugins.common.enums.PluginSettingEnum;
 import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
+import cn.gudqs7.plugins.common.util.IndexIncrementUtil;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
 import cn.gudqs7.plugins.common.util.file.FileUtil;
 import cn.gudqs7.plugins.common.util.jetbrain.ClipboardUtil;
@@ -12,6 +13,7 @@ import cn.gudqs7.plugins.common.util.jetbrain.ExceptionUtil;
 import cn.gudqs7.plugins.common.util.jetbrain.IdeaApplicationUtil;
 import cn.gudqs7.plugins.common.util.structure.PackageInfoUtil;
 import cn.gudqs7.plugins.common.util.structure.PsiClassUtil;
+import cn.gudqs7.plugins.common.util.structure.PsiTypeUtil;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
@@ -102,7 +104,8 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
         psiClassList = getPsiClassList(e, project, psiDirectory, psiClassList);
         if (!CollectionUtils.isEmpty(psiClassList)) {
             PsiClass firstClass = new ArrayList<>(psiClassList).get(0);
-            initConfig(e, project, psiElement, firstClass.getContainingFile().getVirtualFile());
+            VirtualFile configVirtualFile = firstClass.getContainingFile().getVirtualFile();
+            initConfig(e, project, psiElement, configVirtualFile);
             final Set<PsiClass> finalPsiClassList = psiClassList;
 
             String dirPrefix = getDirPrefix();
@@ -123,6 +126,7 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
                 @Override
                 public void run(@NotNull ProgressIndicator indicator) {
                     try {
+                        PluginSettingHelper.initConfig(project, configVirtualFile);
                         indicator.setIndeterminate(false);
                         indicator.setText(getProcessorModelTitle());
                         indicator.setText2(getProcessorModelSubTitle());
@@ -177,6 +181,10 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
                         // 此处 catch 需保留, 因为不会这里抛出异常, 不会到外面的 catch
                         hasCancelAtomic.set(true);
                         ExceptionUtil.handleException(e1);
+                    } finally {
+                        PluginSettingHelper.clearConfigCache();
+                        PsiTypeUtil.clearGeneric();
+                        IndexIncrementUtil.clear();
                     }
                 }
             });

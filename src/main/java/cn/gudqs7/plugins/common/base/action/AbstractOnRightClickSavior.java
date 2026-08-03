@@ -1,11 +1,13 @@
 package cn.gudqs7.plugins.common.base.action;
 
 import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
+import cn.gudqs7.plugins.common.util.IndexIncrementUtil;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
 import cn.gudqs7.plugins.common.util.WebEnvironmentUtil;
 import cn.gudqs7.plugins.common.util.jetbrain.ClipboardUtil;
 import cn.gudqs7.plugins.common.util.jetbrain.DialogUtil;
 import cn.gudqs7.plugins.common.util.jetbrain.ExceptionUtil;
+import cn.gudqs7.plugins.common.util.structure.PsiTypeUtil;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
@@ -174,6 +176,10 @@ public abstract class AbstractOnRightClickSavior extends AbstractAction implemen
                     content.set(ReadAction.compute(contentSupplier::get));
                 } catch (Throwable throwable) {
                     error.set(throwable);
+                } finally {
+                    PluginSettingHelper.clearConfigCache();
+                    PsiTypeUtil.clearGeneric();
+                    IndexIncrementUtil.clear();
                 }
             }
         });
