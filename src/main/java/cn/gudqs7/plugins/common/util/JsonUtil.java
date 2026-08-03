@@ -23,11 +23,9 @@ public class JsonUtil {
     }
 
     public static <T> String toJson(T value, Consumer<GsonBuilder> gsonBuilderConsumer) {
-        return JsonUtils.toJsonString(value);
-//        GsonBuilder gsonBuilder = new GsonBuilder().setPrettyPrinting();
-//        gsonBuilderConsumer.accept(gsonBuilder);
-//        Gson gson = gsonBuilder.create();
-//        return gson.toJson(value);
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilderConsumer.accept(gsonBuilder);
+        return gsonBuilder.create().toJson(value);
     }
 
 }

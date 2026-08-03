@@ -2,7 +2,7 @@
   "feature_id": "B20260803-112934",
   "feature_name": "idea-plugin-compatibility",
   "created_at": "2026-08-03T11:29:34+08:00",
-  "current_stage": "changelog_done",
+  "current_stage": "fix_done",
   "run_mode": "interactive",
   "history": [
     {
@@ -24,19 +24,45 @@
           "at": "2026-08-03T11:29:34+08:00"
         }
       ]
+    },
+    {
+      "stage": "implementation",
+      "done_at": "2026-08-03T20:01:27+08:00",
+      "produced": [
+        "src/main/java/cn/gudqs7/plugins/common/util/JsonUtil.java",
+        "src/main/java/cn/gudqs7/plugins/common/resolver/comment/PsiMethodAnnotationHolderImpl.java",
+        "src/main/java/cn/gudqs7/plugins/common/util/api/HttpUtil.java",
+        "src/test/java/cn/gudqs7/plugins/common/util/JsonUtilTest.java",
+        "src/test/java/cn/gudqs7/plugins/common/resolver/comment/PsiMethodAnnotationHolderImplTest.java",
+        "src/test/java/cn/gudqs7/plugins/common/util/api/HttpUtilTest.java"
+      ],
+      "self_audit": {
+        "passed": 4,
+        "failed": 0,
+        "manual": 0
+      },
+      "auto_decisions": [
+        {
+          "point": "修复范围",
+          "chose": "完成已确认的 P1 正确性和网络处理问题；UI 线程与批量排序另行重构",
+          "at": "2026-08-03T20:01:27+08:00"
+        }
+      ]
     }
   ],
   "last_phase_result": {
-    "stage": "changelog",
+    "stage": "implementation",
     "ok": true,
     "advanced_to": null,
-    "checks": {},
+    "checks": {
+      "gradle_check": true
+    },
     "self_audit": {
       "failed": 0
     },
     "blocked_reason": null,
     "run_mode": "interactive",
-    "at": "2026-08-03T11:29:34+08:00"
+    "at": "2026-08-03T20:01:27+08:00"
   },
   "relations": {
     "extends": [],
@@ -45,7 +71,7 @@
     "resolves": [],
     "conflicts_with": [],
     "relates_to": [],
-    "_updated_at": "2026-08-03T11:29:34+08:00"
+    "_updated_at": "2026-08-03T20:01:27+08:00"
   },
   "next_step": null
 }

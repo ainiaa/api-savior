@@ -177,21 +177,23 @@ public class PsiMethodAnnotationHolderImpl extends AbstractAnnotationHolder {
                     paramNameSet.add(parameter.getName());
                 }
             }
-            List<String> paramList = new ArrayList<>();
-            for (String requestParameter : requestParameters) {
-                int indexOfPoint = requestParameter.indexOf(".");
-                if (indexOfPoint != -1) {
-                    String prefix = requestParameter.substring(0, indexOfPoint);
-                    if (paramNameSet.contains(prefix)) {
-                        paramList.add(requestParameter.substring(indexOfPoint + 1));
-                    } else {
-                        paramList.add(requestParameter);
-                    }
-                }
-            }
+            List<String> paramList = normalizeRequestParameters(requestParameters, paramNameSet);
             String request = String.join(",", paramList);
             commentInfo.appendToTag(tagKey, request);
         }
+    }
+
+    static List<String> normalizeRequestParameters(List<String> requestParameters, Set<String> paramNameSet) {
+        List<String> paramList = new ArrayList<>();
+        for (String requestParameter : requestParameters) {
+            int indexOfPoint = requestParameter.indexOf(".");
+            if (indexOfPoint != -1 && paramNameSet.contains(requestParameter.substring(0, indexOfPoint))) {
+                paramList.add(requestParameter.substring(indexOfPoint + 1));
+            } else {
+                paramList.add(requestParameter);
+            }
+        }
+        return paramList;
     }
 
     private void dealRequestMapping(CommentInfo commentInfo) {

@@ -12,6 +12,8 @@ repositories {
     mavenCentral()
 }
 dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+
     implementation 'org.freemarker:freemarker:2.3.31'
     implementation 'com.youbenzi:MDTool:1.2.4'
     compileOnly 'org.projectlombok:lombok:1.18.46'
@@ -22,7 +24,6 @@ dependencies {
     implementation 'commons-lang:commons-lang:2.6'
     implementation 'commons-codec:commons-codec:1.17.1'
     implementation 'commons-io:commons-io:2.16.1'
-    implementation 'org.apache.httpcomponents:httpcore:4.4.16'
     implementation 'com.google.code.gson:gson:2.11.0'
 
     implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
@@ -76,7 +77,6 @@ tasks.register('verifyPluginRuntimeLibraries') {
                 'commons-lang-2.6.jar',
                 'commons-codec-1.17.1.jar',
                 'commons-io-2.16.1.jar',
-                'httpcore-4.4.16.jar',
                 'gson-2.11.0.jar'
         ]
 
