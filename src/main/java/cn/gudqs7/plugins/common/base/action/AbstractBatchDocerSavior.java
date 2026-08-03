@@ -91,17 +91,7 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
         PsiClass psiClass = getPsiClass(psiElement);
         PsiDirectory psiDirectory = getPsiDirectory(psiElement);
 
-        Set<PsiClass> psiClassList = new TreeSet<>(
-                (o1, o2) -> {
-                    String qName1 = o1.getQualifiedName();
-                    String qName2 = o2.getQualifiedName();
-                    if (Objects.equals(qName1, qName2) || qName1 == null || qName2 == null) {
-                        return 0;
-                    } else {
-                        return qName1.compareTo(qName2);
-                    }
-                }
-        );
+        Set<PsiClass> psiClassList = new TreeSet<>(psiClassComparator());
 
         boolean isRightClickOnClass = psiClass != null;
         if (isRightClickOnClass) {
@@ -197,6 +187,29 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
                 DialogUtil.showDialog(project, getDialogTip(), docRootDirPath);
             }
         }
+    }
+
+    static Comparator<PsiClass> psiClassComparator() {
+        return (first, second) -> {
+            if (first == second) {
+                return 0;
+            }
+            String firstQualifiedName = first.getQualifiedName();
+            String secondQualifiedName = second.getQualifiedName();
+            if (firstQualifiedName != null && firstQualifiedName.equals(secondQualifiedName)) {
+                return 0;
+            }
+            if (firstQualifiedName == null && secondQualifiedName == null) {
+                return Integer.compare(System.identityHashCode(first), System.identityHashCode(second));
+            }
+            if (firstQualifiedName == null) {
+                return 1;
+            }
+            if (secondQualifiedName == null) {
+                return -1;
+            }
+            return firstQualifiedName.compareTo(secondQualifiedName);
+        };
     }
 
     protected boolean isNotShow(@NotNull AnActionEvent e, Project project, PsiElement psiElement, PsiClass psiClass, PsiDirectory psiDirectory) {

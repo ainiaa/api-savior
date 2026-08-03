@@ -10,12 +10,21 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.actionSystem.UpdateInBackground;
+import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.SmartPointerManager;
+import com.intellij.psi.SmartPsiElementPointer;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 /**
  * @author wq
@@ -71,18 +80,6 @@ public abstract class AbstractOnRightClickSavior extends AbstractAction implemen
             PsiClass psiClass = getPsiClass(psiElement);
             boolean isRightClickOnClass = psiClass != null;
 
-            VirtualFile virtualFile = null;
-            if (isRightClickOnClass) {
-                virtualFile = psiClass.getContainingFile().getVirtualFile();
-            }
-            if (isRightClickOnMethod) {
-                virtualFile = psiMethod.getContainingFile().getVirtualFile();
-            }
-
-            if (virtualFile != null) {
-                PluginSettingHelper.initConfig(project, virtualFile);
-            }
-
             if (isRightClickOnMethod) {
                 handlePsiMethod(project, psiMethod);
                 return;
@@ -132,9 +129,15 @@ public abstract class AbstractOnRightClickSavior extends AbstractAction implemen
      * @param psiClass 类
      */
     protected void handlePsiClass(Project project, PsiClass psiClass) {
-        String showContent = handlePsiClass0(project, psiClass);
-        ClipboardUtil.setSysClipboardText(showContent);
-        DialogUtil.showDialog(project, getTip(), showContent);
+        VirtualFile virtualFile = psiClass.getContainingFile().getVirtualFile();
+        SmartPsiElementPointer<PsiClass> pointer = SmartPointerManager.getInstance(project).createSmartPsiElementPointer(psiClass);
+        generateWithProgress(project, virtualFile, () -> {
+            PsiClass currentClass = pointer.getElement();
+            if (currentClass == null) {
+                throw new IllegalStateException("目标类已失效");
+            }
+            return handlePsiClass0(project, currentClass);
+        });
     }
 
     /**
@@ -144,14 +147,42 @@ public abstract class AbstractOnRightClickSavior extends AbstractAction implemen
      * @param psiMethod 方法
      */
     protected void handlePsiMethod(Project project, PsiMethod psiMethod) {
-        PsiClass containingClass = psiMethod.getContainingClass();
-        if (containingClass == null) {
-            ExceptionUtil.handleSyntaxError(psiMethod.getName() + "'s Class");
+        VirtualFile virtualFile = psiMethod.getContainingFile().getVirtualFile();
+        SmartPsiElementPointer<PsiMethod> pointer = SmartPointerManager.getInstance(project).createSmartPsiElementPointer(psiMethod);
+        generateWithProgress(project, virtualFile, () -> {
+            PsiMethod currentMethod = pointer.getElement();
+            if (currentMethod == null) {
+                throw new IllegalStateException("目标方法已失效");
+            }
+            PsiClass containingClass = currentMethod.getContainingClass();
+            if (containingClass == null) {
+                ExceptionUtil.handleSyntaxError(currentMethod.getName() + "'s Class");
+            }
+            return handlePsiMethod0(project, currentMethod, containingClass.getQualifiedName());
+        });
+    }
+
+    private void generateWithProgress(Project project, VirtualFile virtualFile, Supplier<String> contentSupplier) {
+        AtomicReference<String> content = new AtomicReference<>();
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        ProgressManager.getInstance().run(new Task.Modal(project, "生成文档中...", true) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                indicator.setIndeterminate(true);
+                try {
+                    PluginSettingHelper.initConfig(project, virtualFile);
+                    content.set(ReadAction.compute(contentSupplier::get));
+                } catch (Throwable throwable) {
+                    error.set(throwable);
+                }
+            }
+        });
+        if (error.get() != null) {
+            ExceptionUtil.handleException(error.get());
+            return;
         }
-        String psiClassName = containingClass.getQualifiedName();
-        String docByMethod = handlePsiMethod0(project, psiMethod, psiClassName);
-        ClipboardUtil.setSysClipboardText(docByMethod);
-        DialogUtil.showDialog(project, getTip(), docByMethod);
+        ClipboardUtil.setSysClipboardText(content.get());
+        DialogUtil.showDialog(project, getTip(), content.get());
     }
 
     /**
