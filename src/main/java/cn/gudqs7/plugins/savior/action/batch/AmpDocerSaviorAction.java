@@ -9,8 +9,6 @@ import cn.gudqs7.plugins.common.util.structure.PsiClassUtil;
 import cn.gudqs7.plugins.savior.savior.more.JavaToAmpSavior;
 import cn.gudqs7.plugins.savior.theme.ThemeHelper;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -22,7 +20,7 @@ import org.apache.commons.collections.MapUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -94,13 +92,7 @@ public class AmpDocerSaviorAction extends AbstractBatchDocerSavior {
         return "yaml";
     }
 
-    private String generateYaml(Map<String, Object> apis) throws JsonProcessingException {
-        Map<String, Object> root = new HashMap<>(4);
-        root.put("apis", apis);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        String json = objectMapper.writeValueAsString(root);
-        JsonNode jsonNodeTree = objectMapper.readTree(json);
-        return new YAMLMapper().writeValueAsString(jsonNodeTree);
+    static String generateYaml(Map<String, Object> apis) throws JsonProcessingException {
+        return new YAMLMapper().writeValueAsString(Collections.singletonMap("apis", apis));
     }
 }

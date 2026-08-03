@@ -11,7 +11,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiMethod;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.InputStream;
 import java.util.Map;
 
 /**
@@ -43,8 +42,7 @@ public interface Theme {
         String methodTheme = PluginSettingHelper.getConfigItem(PluginSettingEnum.PREFIX_THEME_METHOD.getSettingKey() + pathPrefix);
         if (StringUtils.isNotBlank(methodTheme)) {
             String methodPath = pathPrefix + "/method-" + methodTheme + ".ftl";
-            InputStream inputStream = Theme.class.getClassLoader().getResourceAsStream("template/ftl/" + methodPath);
-            if (inputStream != null) {
+            if (Theme.class.getClassLoader().getResource("template/ftl/" + methodPath) != null) {
                 return methodPath;
             }
         }
@@ -61,8 +59,7 @@ public interface Theme {
         String fieldTheme = PluginSettingHelper.getConfigItem(PluginSettingEnum.PREFIX_THEME_FIELD.getSettingKey() + pathPrefix);
         if (StringUtils.isNotBlank(fieldTheme)) {
             String fieldPath = pathPrefix + "/field-" + fieldTheme + ".ftl";
-            InputStream inputStream = Theme.class.getClassLoader().getResourceAsStream("template/ftl/" + fieldPath);
-            if (inputStream != null) {
+            if (Theme.class.getClassLoader().getResource("template/ftl/" + fieldPath) != null) {
                 return fieldPath;
             }
         }

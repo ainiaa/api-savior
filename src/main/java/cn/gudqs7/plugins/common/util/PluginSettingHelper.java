@@ -12,6 +12,7 @@ import lombok.SneakyThrows;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -246,7 +247,9 @@ public class PluginSettingHelper {
     private static Map<String, String> toMap(String projectBasePath) throws IOException {
         VirtualFile configFile = configFileMap.get(projectBasePath);
         Properties properties = new Properties();
-        properties.load(configFile.getInputStream());
+        try (InputStream inputStream = configFile.getInputStream()) {
+            properties.load(inputStream);
+        }
         Map<String, String> map = new HashMap<>(8);
         for (Object key : properties.keySet()) {
             Object val = properties.get(key);

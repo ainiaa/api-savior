@@ -9,6 +9,7 @@ import com.intellij.psi.search.GlobalSearchScope;
 import org.apache.commons.lang3.StringUtils;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -97,11 +98,10 @@ public class WebEnvironmentUtil {
         if (filesByName.length > 0) {
             String backPort = null;
             for (PsiFile psiFile : filesByName) {
-                String text = psiFile.getText();
-                try {
+                VirtualFile virtualFile = psiFile.getVirtualFile();
+                try (InputStream inputStream = virtualFile.getInputStream()) {
                     Properties properties = new Properties();
-                    VirtualFile virtualFile = psiFile.getVirtualFile();
-                    properties.load(virtualFile.getInputStream());
+                    properties.load(inputStream);
                     String port = properties.getProperty("server.port");
                     if (StringUtils.isNotBlank(port)) {
                         if (containingFile != null) {
