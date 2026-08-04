@@ -43,6 +43,9 @@ public class StructureAndCommentInfo {
      */
     private boolean leaf = false;
 
+    /** Whether this top-level parameter is annotated with {@code @RequestBody}. */
+    private boolean requestBody = false;
+
     /**
      * 当前层级
      */

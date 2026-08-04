@@ -4,6 +4,7 @@ import cn.gudqs7.plugins.common.enums.PluginSettingEnum;
 import cn.gudqs7.plugins.common.util.structure.BaseTypeParseUtil;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
@@ -212,18 +213,28 @@ public class PluginSettingHelper {
     @SneakyThrows
     public static Map<String, String> getConfigFromFile(Project project, VirtualFile currentVirtualFile) {
         ProjectConfigFileCache configFileCache = project.getService(ProjectConfigFileCache.class);
-        VirtualFile cachedConfigFile = configFileCache.getConfigFile();
+        String configScope = getConfigScope(project, currentVirtualFile);
+        VirtualFile cachedConfigFile = configFileCache.getConfigFile(configScope);
         if (cachedConfigFile != null && cachedConfigFile.exists()) {
             return toMap(cachedConfigFile);
+        }
+        PsiFile[] filesByName = FilenameIndex.getFilesByName(project, CONFIG_FILE_PATH, GlobalSearchScope.projectScope(project));
+        if (currentVirtualFile != null) {
+            for (PsiFile psiFile : filesByName) {
+                VirtualFile virtualFile = psiFile.getVirtualFile();
+                if (virtualFile != null && configScope.equals(getConfigScope(project, virtualFile))) {
+                    configFileCache.setConfigFile(configScope, virtualFile);
+                    return toMap(virtualFile);
+                }
+            }
         }
         String projectBasePath = project.getBasePath();
         String defaultConfigPath = projectBasePath + File.separator + CONFIG_FILE_PATH;
         VirtualFile virtualFileByDefault = LocalFileSystem.getInstance().findFileByPath(defaultConfigPath);
         if (virtualFileByDefault != null) {
-            configFileCache.setConfigFile(virtualFileByDefault);
+            configFileCache.setConfigFile(configScope, virtualFileByDefault);
             return toMap(virtualFileByDefault);
         }
-        PsiFile[] filesByName = FilenameIndex.getFilesByName(project, CONFIG_FILE_PATH, GlobalSearchScope.projectScope(project));
         if (filesByName.length > 0) {
             VirtualFile back = null;
             for (PsiFile psiFile : filesByName) {
@@ -232,21 +243,12 @@ public class PluginSettingHelper {
                     continue;
                 }
 
-                String configFilePath = virtualFile.getPath();
-                if (currentVirtualFile != null) {
-                    String projectBasePath1 = getProjectBasePath(currentVirtualFile.getPath());
-                    String projectBasePath2 = getProjectBasePath(configFilePath);
-                    if (projectBasePath1.equals(projectBasePath2)) {
-                        configFileCache.setConfigFile(virtualFile);
-                        return toMap(virtualFile);
-                    }
-                }
                 if (back == null) {
                     back = virtualFile;
                 }
             }
             if (back != null) {
-                configFileCache.setConfigFile(back);
+                configFileCache.setConfigFile(configScope, back);
                 return toMap(back);
             }
         }
@@ -266,12 +268,15 @@ public class PluginSettingHelper {
         return map;
     }
 
-    private static String getProjectBasePath(String path) {
-        int indexOf = path.indexOf("src/");
-        if (indexOf != -1) {
-            return path.substring(0, path.indexOf("src/"));
+    private static String getConfigScope(Project project, VirtualFile virtualFile) {
+        if (virtualFile != null) {
+            VirtualFile contentRoot = ProjectFileIndex.getInstance(project).getContentRootForFile(virtualFile);
+            if (contentRoot != null) {
+                return contentRoot.getPath();
+            }
         }
-        return "";
+        String basePath = project.getBasePath();
+        return basePath == null ? "" : basePath;
     }
 
     // endregion init config

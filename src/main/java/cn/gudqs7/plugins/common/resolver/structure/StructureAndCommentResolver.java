@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -31,12 +32,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StructureAndCommentResolver implements IStructureAndCommentResolver {
 
     private Project project;
+    private List<String> hiddenKeys = Collections.emptyList();
+    private List<String> onlyKeys = Collections.emptyList();
 
     private final ConcurrentHashMap<String, StructureAndCommentInfo> earlyCache = new ConcurrentHashMap<>(16);
     private final ConcurrentHashMap<String, StructureAndCommentInfo> psiClassCache = new ConcurrentHashMap<>(16);
 
     public void setProject(Project project) {
         this.project = project;
+    }
+
+    public void setFieldFilter(List<String> hiddenKeys, List<String> onlyKeys) {
+        this.hiddenKeys = hiddenKeys == null ? Collections.emptyList() : hiddenKeys;
+        this.onlyKeys = onlyKeys == null ? Collections.emptyList() : onlyKeys;
     }
 
     @Override
@@ -87,6 +95,7 @@ public class StructureAndCommentResolver implements IStructureAndCommentResolver
             }
             structureAndCommentInfo.setType(StructureType.PSI_PARAM.getType());
             structureAndCommentInfo.setPsiParameter(psiParameter);
+            structureAndCommentInfo.setRequestBody(psiParameter.hasAnnotation(AnnotationHolder.QNAME_OF_REQUEST_BODY));
             root.addChild(fieldName, structureAndCommentInfo);
         }
         psiClassCache.clear();
@@ -457,8 +466,6 @@ public class StructureAndCommentResolver implements IStructureAndCommentResolver
 
     private boolean checkHiddenRequest(String fieldPrefix, String fieldName) {
         String fieldKey = fieldPrefix + fieldName;
-        List<String> hiddenKeys = ResolverContextHolder.getData(ResolverContextHolder.HIDDEN_KEYS);
-        List<String> onlyKeys = ResolverContextHolder.getData(ResolverContextHolder.ONLY_KEYS);
         if (CollectionUtils.isNotEmpty(hiddenKeys)) {
             return hiddenKeys.contains(fieldKey);
         }

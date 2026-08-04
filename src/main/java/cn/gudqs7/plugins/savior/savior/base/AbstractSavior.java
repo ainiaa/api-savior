@@ -7,7 +7,6 @@ import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
 import cn.gudqs7.plugins.common.resolver.structure.StructureAndCommentResolver;
 import cn.gudqs7.plugins.common.util.structure.PsiAnnotationUtil;
 import cn.gudqs7.plugins.common.util.structure.PsiClassUtil;
-import cn.gudqs7.plugins.common.util.structure.ResolverContextHolder;
 import cn.gudqs7.plugins.savior.pojo.ApiMethodInfo;
 import cn.gudqs7.plugins.savior.reader.Java2ApiReader;
 import cn.gudqs7.plugins.savior.reader.Java2MapReader;
@@ -27,13 +26,11 @@ public abstract class AbstractSavior<T> extends BaseSavior {
 
     protected final Java2MapReader java2JsonReader;
     protected final Java2ApiReader java2ApiReader;
-    protected final StructureAndCommentResolver structureAndCommentResolver;
 
     public AbstractSavior(Theme theme) {
         super(theme);
         java2JsonReader = new Java2MapReader(theme);
         java2ApiReader = new Java2ApiReader();
-        structureAndCommentResolver = new StructureAndCommentResolver();
     }
 
     public List<PsiMethod> getMethodList(PsiClass psiClass) {
@@ -142,38 +139,29 @@ public abstract class AbstractSavior<T> extends BaseSavior {
                 return null;
             }
         }
-        structureAndCommentResolver.setProject(project);
-
         List<String> hiddenRequest = commentInfo.getHiddenRequest();
         List<String> onlyRequest = commentInfo.getOnlyRequest();
-        ResolverContextHolder.addData(ResolverContextHolder.HIDDEN_KEYS, hiddenRequest);
-        ResolverContextHolder.addData(ResolverContextHolder.ONLY_KEYS, onlyRequest);
-
         PsiParameterList parameterTypes = publicMethod.getParameterList();
-        StructureAndCommentInfo paramStructureAndCommentInfo;
-        try {
-            paramStructureAndCommentInfo = structureAndCommentResolver.resolveFromParameterList(parameterTypes);
-        } finally {
-            ResolverContextHolder.removeAll();
-        }
+        StructureAndCommentInfo paramStructureAndCommentInfo = resolveStructure(project, hiddenRequest, onlyRequest)
+                .resolveFromParameterList(parameterTypes);
 
         List<String> hiddenResponse = commentInfo.getHiddenResponse();
         List<String> onlyResponse = commentInfo.getOnlyResponse();
-        ResolverContextHolder.addData(ResolverContextHolder.HIDDEN_KEYS, hiddenResponse);
-        ResolverContextHolder.addData(ResolverContextHolder.ONLY_KEYS, onlyResponse);
-
         PsiTypeElement returnTypeElement = publicMethod.getReturnTypeElement();
-        StructureAndCommentInfo returnStructureAndCommentInfo;
-        try {
-            returnStructureAndCommentInfo = structureAndCommentResolver.resolveFromReturnVal(returnTypeElement);
-        } finally {
-            ResolverContextHolder.removeAll();
-        }
+        StructureAndCommentInfo returnStructureAndCommentInfo = resolveStructure(project, hiddenResponse, onlyResponse)
+                .resolveFromReturnVal(returnTypeElement);
 
         return new ApiMethodInfo(
                 project, interfaceClassName, publicMethod, commentInfo,
                 paramStructureAndCommentInfo, returnStructureAndCommentInfo
         );
+    }
+
+    private StructureAndCommentResolver resolveStructure(Project project, List<String> hiddenKeys, List<String> onlyKeys) {
+        StructureAndCommentResolver resolver = new StructureAndCommentResolver();
+        resolver.setProject(project);
+        resolver.setFieldFilter(hiddenKeys, onlyKeys);
+        return resolver;
     }
 
     protected abstract T getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param);

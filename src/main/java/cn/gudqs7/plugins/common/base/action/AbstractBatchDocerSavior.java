@@ -2,6 +2,7 @@ package cn.gudqs7.plugins.common.base.action;
 
 import cn.gudqs7.plugins.common.enums.MoreCommentTagEnum;
 import cn.gudqs7.plugins.common.enums.PluginSettingEnum;
+import cn.gudqs7.plugins.common.context.GenerationSession;
 import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
 import cn.gudqs7.plugins.common.util.IndexIncrementUtil;
@@ -130,8 +131,7 @@ public abstract class AbstractBatchDocerSavior<S> extends AbstractAction impleme
             ProgressManager.getInstance().run(new Task.Modal(project, title, true) {
                 @Override
                 public void run(@NotNull ProgressIndicator indicator) {
-                    try {
-                        PluginSettingHelper.initConfig(project, configVirtualFile);
+                    try (GenerationSession ignored = GenerationSession.open(project, configVirtualFile)) {
                         indicator.setIndeterminate(false);
                         indicator.setText(getProcessorModelTitle());
                         indicator.setText2(getProcessorModelSubTitle());
@@ -171,15 +171,12 @@ public abstract class AbstractBatchDocerSavior<S> extends AbstractAction impleme
                         hasCancelAtomic.set(true);
                         handleCancelTask(stagingDocRootDirPath, projectFilePath);
                     } catch (Throwable e1) {
-                        // 此处 catch 需保留, 因为不会这里抛出异常, 不会到外面的 catch
+                        if (e1 instanceof Error) {
+                            throw (Error) e1;
+                        }
                         hasCancelAtomic.set(true);
                         handleCancelTask(stagingDocRootDirPath, projectFilePath);
                         ExceptionUtil.handleException(e1);
-                    } finally {
-                        PluginSettingHelper.clearConfigCache();
-                        PsiTypeUtil.clearGeneric();
-                        IndexIncrementUtil.clear();
-                        WebEnvironmentUtil.emptyIp();
                     }
                 }
             });

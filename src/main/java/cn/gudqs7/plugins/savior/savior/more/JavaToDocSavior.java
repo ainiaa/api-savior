@@ -8,6 +8,7 @@ import cn.gudqs7.plugins.common.util.JsonUtil;
 import cn.gudqs7.plugins.common.util.StringTool;
 import cn.gudqs7.plugins.common.util.file.FreeMarkerUtil;
 import cn.gudqs7.plugins.savior.pojo.ApiMethodInfo;
+import cn.gudqs7.plugins.savior.pojo.ApiDocument;
 import cn.gudqs7.plugins.savior.pojo.FieldLevelInfo;
 import cn.gudqs7.plugins.savior.savior.base.AbstractSavior;
 import cn.gudqs7.plugins.savior.theme.Theme;
@@ -26,7 +27,7 @@ import java.util.Map;
  * @author wq
  * @date 2021/5/19
  */
-public class JavaToDocSavior extends AbstractSavior<Map<String, Object>> {
+public class JavaToDocSavior extends AbstractSavior<ApiDocument> {
 
     public JavaToDocSavior(Theme theme) {
         super(theme);
@@ -61,17 +62,17 @@ public class JavaToDocSavior extends AbstractSavior<Map<String, Object>> {
     }
 
     public Pair<String, String> generateDocByMethodV2(Project project, String interfaceClassName, PsiMethod publicMethod, boolean jumpHidden) {
-        Map<String, Object> data = getDataByMethod(project, interfaceClassName, publicMethod, jumpHidden);
+        ApiDocument data = getDataByMethod(project, interfaceClassName, publicMethod, jumpHidden);
         if (data == null) {
             return Pair.of("", null);
         }
-        String apiName = data.getOrDefault("interfaceName", "").toString();
+        String apiName = data.getInterfaceName();
         String template = FreeMarkerUtil.renderTemplate(theme.getMethodPath(), data);
         return Pair.of(template + "\n\n", apiName);
     }
 
     @Override
-    protected Map<String, Object> getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param) {
+    protected ApiDocument getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param) {
         Project project = apiMethodInfo.getProject();
         PsiMethod publicMethod = apiMethodInfo.getPublicMethod();
         CommentInfo commentInfo = apiMethodInfo.getCommentInfo();
@@ -85,18 +86,18 @@ public class JavaToDocSavior extends AbstractSavior<Map<String, Object>> {
         String java2jsonStr = JsonUtil.toJson(java2jsonMap);
         String returnJava2jsonStr = JsonUtil.toJson(returnJava2jsonMap.getOrDefault(MapKeyConstant.RETURN_FIELD_NAME, new Object()));
 
-        Map<String, Object> dataByStr = collectDataByStr(project, publicMethod, commentInfo, interfaceClassName,
+        ApiDocument document = collectDataByStr(publicMethod, commentInfo, interfaceClassName,
                 paramLevelMap, returnLevelMap, java2jsonStr, returnJava2jsonStr);
 
-        theme.afterCollectData(dataByStr, project, publicMethod, interfaceClassName, commentInfo,
+        theme.afterCollectData(document, project, publicMethod, interfaceClassName, commentInfo,
                 paramStructureAndCommentInfo, returnStructureAndCommentInfo,
                 java2jsonMap, returnJava2jsonMap, java2jsonStr, returnJava2jsonStr);
 
-        return dataByStr;
+        return document;
     }
 
-    private Map<String, Object> collectDataByStr(
-            Project project, PsiMethod publicMethod, CommentInfo commentInfo, String interfaceClassName,
+    private ApiDocument collectDataByStr(
+            PsiMethod publicMethod, CommentInfo commentInfo, String interfaceClassName,
             Map<String, List<FieldLevelInfo>> paramLevelMap, Map<String, List<FieldLevelInfo>> returnLevelMap, String java2jsonStr, String returnJava2jsonStr
     ) {
         String url = commentInfo.getUrl("");
@@ -107,19 +108,19 @@ public class JavaToDocSavior extends AbstractSavior<Map<String, Object>> {
         String notes = commentInfo.getNotes("");
         List<ResponseCodeInfo> responseCodeInfoList = commentInfo.getResponseCodeInfoList();
 
-        Map<String, Object> data = new HashMap<>(16);
-        data.put("interfaceName", StringTool.replaceMd(interfaceName));
-        data.put("interfaceNotes", notes);
-        data.put("qualifiedMethodName", interfaceClassName + "#" + methodName);
-        data.put("url", url);
-        data.put("method", method);
-        data.put("contentType", contentType);
-        data.put("paramLevelMap", paramLevelMap);
-        data.put("returnLevelMap", returnLevelMap);
-        data.put("jsonExample", java2jsonStr);
-        data.put("returnJsonExample", returnJava2jsonStr);
-        data.put("responseCodeInfoList", responseCodeInfoList);
-        return data;
+        ApiDocument document = new ApiDocument();
+        document.setInterfaceName(StringTool.replaceMd(interfaceName));
+        document.setInterfaceNotes(notes);
+        document.setQualifiedMethodName(interfaceClassName + "#" + methodName);
+        document.setUrl(url);
+        document.setMethod(method);
+        document.setContentType(contentType);
+        document.setParamLevelMap(paramLevelMap);
+        document.setReturnLevelMap(returnLevelMap);
+        document.setJsonExample(java2jsonStr);
+        document.setReturnJsonExample(returnJava2jsonStr);
+        document.setResponseCodeInfoList(responseCodeInfoList);
+        return document;
     }
 
 }

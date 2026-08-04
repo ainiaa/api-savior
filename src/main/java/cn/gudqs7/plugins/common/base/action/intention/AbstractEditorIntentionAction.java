@@ -8,6 +8,7 @@ import com.intellij.codeInsight.intention.PsiElementBaseIntentionAction;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.util.IncorrectOperationException;
@@ -24,6 +25,7 @@ public abstract class AbstractEditorIntentionAction extends PsiElementBaseIntent
         try {
             return isAvailable0(project, editor, element);
         } catch (Throwable ex) {
+            rethrowCancellationOrError(ex);
             ExceptionUtil.handleException(ex);
             return false;
         }
@@ -47,6 +49,7 @@ public abstract class AbstractEditorIntentionAction extends PsiElementBaseIntent
             Document document = editor.getDocument();
             invoke0(project, editor, element, document, psiDocumentManager);
         } catch (Throwable ex) {
+            rethrowCancellationOrError(ex);
             ExceptionUtil.handleException(ex);
         } finally {
             PsiTypeUtil.clearGeneric();
@@ -68,6 +71,15 @@ public abstract class AbstractEditorIntentionAction extends PsiElementBaseIntent
 
     protected void destroy(Project project, Editor editor, PsiElement element) {
 
+    }
+
+    private static void rethrowCancellationOrError(Throwable throwable) {
+        if (throwable instanceof ProcessCanceledException) {
+            throw (ProcessCanceledException) throwable;
+        }
+        if (throwable instanceof Error) {
+            throw (Error) throwable;
+        }
     }
 
     protected Integer getInsertOffset(@NotNull PsiElement psiElement) {

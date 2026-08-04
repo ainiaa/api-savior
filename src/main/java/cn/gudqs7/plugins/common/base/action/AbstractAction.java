@@ -5,6 +5,7 @@ import cn.gudqs7.plugins.common.util.jetbrain.ExceptionUtil;
 import cn.gudqs7.plugins.common.util.structure.PsiTypeUtil;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.psi.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,7 +19,9 @@ public abstract class AbstractAction extends AnAction {
     public void update(@NotNull AnActionEvent e) {
         try {
             update0(e);
-        } catch (Throwable ex) {
+        } catch (ProcessCanceledException canceledException) {
+            throw canceledException;
+        } catch (Exception ex) {
             ExceptionUtil.handleException(ex);
         } finally {
             destroy(e);
@@ -29,7 +32,9 @@ public abstract class AbstractAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         try {
             actionPerformed0(e);
-        } catch (Throwable ex) {
+        } catch (ProcessCanceledException canceledException) {
+            throw canceledException;
+        } catch (Exception ex) {
             ExceptionUtil.handleException(ex);
         } finally {
             WebEnvironmentUtil.emptyIp();

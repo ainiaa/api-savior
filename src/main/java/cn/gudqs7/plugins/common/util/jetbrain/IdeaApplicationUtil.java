@@ -2,6 +2,7 @@ package cn.gudqs7.plugins.common.util.jetbrain;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ReadAction;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.util.ThrowableComputable;
 import com.intellij.util.ThrowableRunnable;
 import org.jetbrains.annotations.NotNull;
@@ -26,6 +27,12 @@ public class IdeaApplicationUtil {
                 try {
                     runnable.run();
                 } catch (Throwable ex) {
+                    if (ex instanceof ProcessCanceledException) {
+                        throw (ProcessCanceledException) ex;
+                    }
+                    if (ex instanceof Error) {
+                        throw (Error) ex;
+                    }
                     ExceptionUtil.handleException(ex);
                 }
             });

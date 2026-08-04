@@ -37,13 +37,11 @@ public abstract class AbstractReqDocerSavior extends AbstractOnRightClickSavior 
     private final Java2MapReader java2JsonReader;
     private final Java2ApiReader java2ApiReader;
     private final Java2BulkReader java2BulkReader;
-    private final StructureAndCommentResolver structureAndCommentResolver;
 
     public AbstractReqDocerSavior(Theme theme) {
         this.java2JsonReader = new Java2MapReader(theme);
         this.java2ApiReader = new Java2ApiReader();
         this.java2BulkReader = new Java2BulkReader(theme);
-        structureAndCommentResolver = new StructureAndCommentResolver();
     }
 
     @Override
@@ -77,8 +75,9 @@ public abstract class AbstractReqDocerSavior extends AbstractOnRightClickSavior 
         PsiClassType psiClassType = PsiType.getTypeByName(qualifiedName, project, GlobalSearchScope.allScope(project));
         if (psiClassType instanceof PsiClassReferenceType) {
             PsiClassReferenceType classReferenceType = (PsiClassReferenceType) psiClassType;
-            structureAndCommentResolver.setProject(project);
-            StructureAndCommentInfo structureAndCommentInfo = structureAndCommentResolver.resolveFromClass(classReferenceType);
+            StructureAndCommentResolver resolver = new StructureAndCommentResolver();
+            resolver.setProject(project);
+            StructureAndCommentInfo structureAndCommentInfo = resolver.resolveFromClass(classReferenceType);
             String java2json = "";
             Theme theme = java2JsonReader.getTheme();
             switch (theme.getThemeType()) {

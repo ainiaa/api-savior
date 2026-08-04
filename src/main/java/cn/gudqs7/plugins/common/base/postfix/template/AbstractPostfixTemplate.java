@@ -7,6 +7,7 @@ import com.intellij.codeInsight.template.postfix.templates.PostfixTemplateWithEx
 import com.intellij.codeInsight.template.postfix.util.JavaPostfixTemplatesUtils;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.util.Condition;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiCodeBlock;
@@ -37,6 +38,7 @@ public abstract class AbstractPostfixTemplate extends PostfixTemplateWithExpress
                         try {
                             return ContainerUtil.createMaybeSingletonList(expressionGetFn.apply(context));
                         } catch (Throwable ex) {
+                            rethrowCancellationOrError(ex);
                             ExceptionUtil.handleException(ex);
                             return null;
                         }
@@ -52,6 +54,7 @@ public abstract class AbstractPostfixTemplate extends PostfixTemplateWithExpress
                         try {
                             return hasExpressionFn.apply(context);
                         } catch (Throwable ex) {
+                            rethrowCancellationOrError(ex);
                             ExceptionUtil.handleException(ex);
                             return false;
                         }
@@ -76,6 +79,7 @@ public abstract class AbstractPostfixTemplate extends PostfixTemplateWithExpress
         try {
             expandForChooseExpression0(expression, editor);
         } catch (Throwable e) {
+            rethrowCancellationOrError(e);
             ExceptionUtil.handleException(e);
         } finally {
             PsiTypeUtil.clearGeneric();
@@ -114,5 +118,14 @@ public abstract class AbstractPostfixTemplate extends PostfixTemplateWithExpress
 
     protected void destroy(PsiElement expression, Editor editor) {
 
+    }
+
+    private static void rethrowCancellationOrError(Throwable throwable) {
+        if (throwable instanceof ProcessCanceledException) {
+            throw (ProcessCanceledException) throwable;
+        }
+        if (throwable instanceof Error) {
+            throw (Error) throwable;
+        }
     }
 }

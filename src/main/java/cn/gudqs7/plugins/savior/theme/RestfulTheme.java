@@ -9,6 +9,7 @@ import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
 import cn.gudqs7.plugins.common.resolver.RequestMappingResolver;
 import cn.gudqs7.plugins.common.util.JsonUtil;
 import cn.gudqs7.plugins.savior.enums.ThemeType;
+import cn.gudqs7.plugins.savior.pojo.ApiDocument;
 import cn.gudqs7.plugins.savior.pojo.PostmanKvInfo;
 import cn.gudqs7.plugins.savior.reader.Java2BulkReader;
 import cn.gudqs7.plugins.savior.util.RestfulUtil;
@@ -24,7 +25,7 @@ import java.util.Map;
  */
 public class RestfulTheme implements Theme {
 
-    private static RestfulTheme instance;
+    private static final Theme INSTANCE = new RestfulTheme();
 
     private final Java2BulkReader java2BulkReader;
 
@@ -33,14 +34,7 @@ public class RestfulTheme implements Theme {
     }
 
     public static Theme getInstance() {
-        if (instance == null) {
-            synchronized (RestfulTheme.class) {
-                if (instance == null) {
-                    instance = new RestfulTheme();
-                }
-            }
-        }
-        return instance;
+        return INSTANCE;
     }
 
     @Override
@@ -65,9 +59,9 @@ public class RestfulTheme implements Theme {
     }
 
     @Override
-    public void afterCollectData(Map<String, Object> dataByStr, Project project, PsiMethod publicMethod, String interfaceClassName, CommentInfo commentInfo, StructureAndCommentInfo paramStructureAndCommentInfo, StructureAndCommentInfo returnStructureAndCommentInfo, Map<String, Object> java2jsonMap, Map<String, Object> returnJava2jsonMap, String java2jsonStr, String returnJava2jsonStr) {
+    public void afterCollectData(ApiDocument document, Project project, PsiMethod publicMethod, String interfaceClassName, CommentInfo commentInfo, StructureAndCommentInfo paramStructureAndCommentInfo, StructureAndCommentInfo returnStructureAndCommentInfo, Map<String, Object> java2jsonMap, Map<String, Object> returnJava2jsonMap, String java2jsonStr, String returnJava2jsonStr) {
         if (java2jsonMap == null || java2jsonMap.isEmpty()) {
-            dataByStr.put("jsonExample", "");
+            document.setJsonExample("");
             return;
         }
         // 1.获取 json示例 或 bulk 示例
@@ -86,7 +80,7 @@ public class RestfulTheme implements Theme {
         if (firstMethodIsGet) {
             // GET
             url = url + query;
-            dataByStr.put("jsonExample", RestfulUtil.getPostmanBulkByKvList(queryList));
+                        document.setJsonExample(RestfulUtil.getPostmanBulkByKvList(queryList));
         } else {
             switch (contentType) {
                 case RequestMapping.ContentType.APPLICATION_JSON:
@@ -95,31 +89,27 @@ public class RestfulTheme implements Theme {
                     Object key = java2jsonMap.get(MapKeyConstant.HAS_REQUEST_BODY);
                     if (key instanceof String) {
                         String key0 = (String) key;
-                        dataByStr.put("jsonExample", JsonUtil.toJson(java2jsonMap.get(key0)));
+                        document.setJsonExample(JsonUtil.toJson(java2jsonMap.get(key0)));
                     }
                     break;
                 case RequestMapping.ContentType.FORM_DATA:
                 case RequestMapping.ContentType.X_WWW_FORM_URLENCODED:
                     // POST + form-data || POST + x-www/form-data
                     List<PostmanKvInfo> kvList = java2BulkReader.read(paramStructureAndCommentInfo);
-                    dataByStr.put("jsonExample", RestfulUtil.getPostmanBulkByKvList(kvList));
+                        document.setJsonExample(RestfulUtil.getPostmanBulkByKvList(kvList));
                     break;
                 default:
                     break;
             }
         }
-        dataByStr.put("url", url);
+        document.setUrl(url);
     }
 
     @Override
     public boolean handleParameter(StructureAndCommentInfo structureAndCommentInfo, Map<String, Object> map, String fieldName) {
-        if (structureAndCommentInfo.getCommentInfo() != null) {
-            AnnotationHolder parent = structureAndCommentInfo.getCommentInfo().getParent();
-            boolean hasAnnotation = parent.hasAnnotation(AnnotationHolder.QNAME_OF_REQUEST_BODY);
-            if (hasAnnotation) {
-                map.put(MapKeyConstant.HAS_REQUEST_BODY, fieldName);
-                return false;
-            }
+        if (structureAndCommentInfo.isRequestBody()) {
+            map.put(MapKeyConstant.HAS_REQUEST_BODY, fieldName);
+            return false;
         }
         // 只要包含多个子节点都需要打散
         return FieldType.POJO.getType().equals(structureAndCommentInfo.getFieldTypeCode());

@@ -7,6 +7,7 @@ import cn.gudqs7.plugins.common.pojo.resolver.StructureAndCommentInfo;
 import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
 import cn.gudqs7.plugins.savior.enums.ThemeType;
+import cn.gudqs7.plugins.savior.pojo.ApiDocument;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiMethod;
 import org.apache.commons.lang3.StringUtils;
@@ -112,7 +113,7 @@ public interface Theme {
      * @param java2jsonStr                  参数实例值json/bulk
      * @param returnJava2jsonStr            返回值示例值json
      */
-    default void afterCollectData(Map<String, Object> dataByStr, Project project, PsiMethod publicMethod, String interfaceClassName, CommentInfo commentInfo, StructureAndCommentInfo paramStructureAndCommentInfo, StructureAndCommentInfo returnStructureAndCommentInfo, Map<String, Object> java2jsonMap, Map<String, Object> returnJava2jsonMap, String java2jsonStr, String returnJava2jsonStr) {
+    default void afterCollectData(ApiDocument document, Project project, PsiMethod publicMethod, String interfaceClassName, CommentInfo commentInfo, StructureAndCommentInfo paramStructureAndCommentInfo, StructureAndCommentInfo returnStructureAndCommentInfo, Map<String, Object> java2jsonMap, Map<String, Object> returnJava2jsonMap, String java2jsonStr, String returnJava2jsonStr) {
 
     }
 }

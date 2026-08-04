@@ -8,13 +8,13 @@ import cn.gudqs7.plugins.common.util.PluginSettingHelper;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiType;
 import lombok.Data;
-import org.apache.commons.lang.time.DateFormatUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Function;
 
@@ -298,7 +298,7 @@ public class BaseTypeUtil {
         if (notUsingRandom()) {
             now.setTime(1338182040520L);
         }
-        return DateFormatUtils.format(now, pattern);
+        return new SimpleDateFormat(pattern).format(now);
     }
 
     private static String randomString(CommentInfo commentInfo) {

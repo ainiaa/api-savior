@@ -1,6 +1,7 @@
 package cn.gudqs7.plugins.common.base.action;
 
 import cn.gudqs7.plugins.common.resolver.RequestMappingResolver;
+import cn.gudqs7.plugins.common.context.GenerationSession;
 import cn.gudqs7.plugins.common.util.IndexIncrementUtil;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
 import cn.gudqs7.plugins.common.util.WebEnvironmentUtil;
@@ -15,6 +16,7 @@ import com.intellij.openapi.actionSystem.UpdateInBackground;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -170,16 +172,12 @@ public abstract class AbstractOnRightClickSavior extends AbstractAction implemen
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 indicator.setIndeterminate(true);
-                try {
-                    PluginSettingHelper.initConfig(project, virtualFile);
+                try (GenerationSession ignored = GenerationSession.open(project, virtualFile)) {
                     content.set(ReadAction.compute(contentSupplier::get));
-                } catch (Throwable throwable) {
+                } catch (ProcessCanceledException canceledException) {
+                    throw canceledException;
+                } catch (Exception throwable) {
                     error.set(throwable);
-                } finally {
-                    PluginSettingHelper.clearConfigCache();
-                    PsiTypeUtil.clearGeneric();
-                    IndexIncrementUtil.clear();
-                    WebEnvironmentUtil.emptyIp();
                 }
             }
         });

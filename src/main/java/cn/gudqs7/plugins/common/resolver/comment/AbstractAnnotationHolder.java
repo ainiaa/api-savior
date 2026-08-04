@@ -34,7 +34,6 @@ public abstract class AbstractAnnotationHolder implements AnnotationHolder {
         } else {
             commentInfo = commentInfoByComment;
         }
-        commentInfo.setParent(this);
         return commentInfo;
     }
 

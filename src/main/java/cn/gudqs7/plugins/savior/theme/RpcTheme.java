@@ -4,6 +4,7 @@ import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.pojo.resolver.StructureAndCommentInfo;
 import cn.gudqs7.plugins.common.util.JsonUtil;
 import cn.gudqs7.plugins.savior.enums.ThemeType;
+import cn.gudqs7.plugins.savior.pojo.ApiDocument;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiMethod;
 
@@ -19,17 +20,10 @@ public class RpcTheme implements Theme {
     private RpcTheme() {
     }
 
-    private static RpcTheme instance;
+    private static final RpcTheme INSTANCE = new RpcTheme();
 
     public static RpcTheme getInstance() {
-        if (instance == null) {
-            synchronized (RpcTheme.class) {
-                if (instance == null) {
-                    instance = new RpcTheme();
-                }
-            }
-        }
-        return instance;
+        return INSTANCE;
     }
 
     @Override
@@ -43,14 +37,14 @@ public class RpcTheme implements Theme {
     }
 
     @Override
-    public void afterCollectData(Map<String, Object> dataByStr, Project project, PsiMethod publicMethod, String interfaceClassName, CommentInfo commentInfo, StructureAndCommentInfo paramStructureAndCommentInfo, StructureAndCommentInfo returnStructureAndCommentInfo, Map<String, Object> java2jsonMap, Map<String, Object> returnJava2jsonMap, String java2jsonStr, String returnJava2jsonStr) {
+    public void afterCollectData(ApiDocument document, Project project, PsiMethod publicMethod, String interfaceClassName, CommentInfo commentInfo, StructureAndCommentInfo paramStructureAndCommentInfo, StructureAndCommentInfo returnStructureAndCommentInfo, Map<String, Object> java2jsonMap, Map<String, Object> returnJava2jsonMap, String java2jsonStr, String returnJava2jsonStr) {
         if (java2jsonMap == null || java2jsonMap.size() == 0) {
-            dataByStr.put("jsonExample", "");
+            document.setJsonExample("");
             return;
         }
         List<Object> list = new ArrayList<>(java2jsonMap.values());
         java2jsonStr = JsonUtil.toJson(list);
-        dataByStr.put("jsonExample", java2jsonStr);
+        document.setJsonExample(java2jsonStr);
     }
 
 }

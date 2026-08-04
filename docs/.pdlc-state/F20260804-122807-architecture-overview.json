@@ -1,0 +1,59 @@
+{
+  "feature_id": "F20260804-122807",
+  "feature_name": "architecture-overview",
+  "created_at": "2026-08-04T12:28:07+08:00",
+  "current_stage": "design_done",
+  "run_mode": "interactive",
+  "history": [
+    {
+      "stage": "design",
+      "done_at": "2026-08-04T12:28:07+08:00",
+      "produced": [
+        "docs/ARCHITECTURE.md"
+      ],
+      "self_audit": {
+        "passed": 4,
+        "failed": 0,
+        "manual": 0
+      },
+      "auto_decisions": [
+        {
+          "point": "文档范围",
+          "chose": "按单进程 IDEA 插件而非微服务系统描述当前模块、PSI 线程边界、缓存与运行时依赖。",
+          "at": "2026-08-04T12:28:07+08:00"
+        }
+      ]
+    }
+  ],
+  "last_phase_result": {
+    "stage": "design",
+    "ok": true,
+    "advanced_to": "design_done",
+    "checks": {
+      "trace_header": true,
+      "required_sections": true,
+      "code_alignment": true,
+      "state_advanced": true
+    },
+    "self_audit": {
+      "failed": 0
+    },
+    "blocked_reason": null,
+    "run_mode": "interactive",
+    "at": "2026-08-04T12:28:07+08:00"
+  },
+  "relations": {
+    "extends": [],
+    "depends_on": [],
+    "supersedes": [],
+    "resolves": [],
+    "conflicts_with": [],
+    "relates_to": [
+      "B20260803-203714",
+      "B20260803-205116",
+      "F20260803-205826"
+    ],
+    "_updated_at": "2026-08-04T12:28:07+08:00"
+  },
+  "next_step": null
+}

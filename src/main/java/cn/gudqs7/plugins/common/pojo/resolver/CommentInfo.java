@@ -2,7 +2,6 @@ package cn.gudqs7.plugins.common.pojo.resolver;
 
 import cn.gudqs7.plugins.common.consts.CommonConst;
 import cn.gudqs7.plugins.common.enums.MoreCommentTagEnum;
-import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
 import cn.gudqs7.plugins.common.util.structure.BaseTypeParseUtil;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -25,11 +24,6 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class CommentInfo extends RequestMapping {
-
-    /**
-     * 父类
-     */
-    private AnnotationHolder parent;
 
     /**
      * 字段含义

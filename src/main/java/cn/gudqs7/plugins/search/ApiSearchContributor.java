@@ -18,9 +18,10 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.ThrowableComputable;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.psi.codeStyle.MinusculeMatcher;
 import com.intellij.psi.codeStyle.NameUtil;
@@ -124,7 +125,9 @@ public class ApiSearchContributor implements WeightedSearchEverywhereContributor
                         }
                     }
                     return true;
-                } catch (Throwable ex) {
+                } catch (ProcessCanceledException canceledException) {
+                    throw canceledException;
+                } catch (Exception ex) {
                     ExceptionUtil.handleException(ex);
                     return false;
                 }
@@ -178,8 +181,8 @@ public class ApiSearchContributor implements WeightedSearchEverywhereContributor
             if (navItemList == null) {
                 // 必须从read线程访问，耗时不能过长
                 navItemList = ApplicationManager.getApplication().runReadAction(
-                        (ThrowableComputable<List<ApiNavigationItem>, Throwable>) () ->
-                                ApiResolverService.getInstance(myProject).getApiNavigationItemList()
+                        (Computable<List<ApiNavigationItem>>) () ->
+                                myProject.getService(ApiIndexService.class).getItems()
                 );
             }
             if (navItemList != null) {
@@ -193,7 +196,9 @@ public class ApiSearchContributor implements WeightedSearchEverywhereContributor
                     }
                 }
             }
-        } catch (Throwable ex) {
+        } catch (ProcessCanceledException canceledException) {
+            throw canceledException;
+        } catch (Exception ex) {
             ExceptionUtil.handleException(ex);
         }
     }

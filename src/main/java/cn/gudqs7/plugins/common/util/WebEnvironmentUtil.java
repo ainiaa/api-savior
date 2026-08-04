@@ -1,13 +1,15 @@
 package cn.gudqs7.plugins.common.util;
 
 import cn.gudqs7.plugins.common.enums.PluginSettingEnum;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.search.FilenameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 import org.apache.commons.lang3.StringUtils;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
 import java.net.InetAddress;
@@ -77,6 +79,10 @@ public class WebEnvironmentUtil {
      * @return 网络端口
      */
     public static String getPortByConfigFile(Project project, PsiFile containingFile) {
+        return project.getService(ServerPortCache.class).getPort(containingFile);
+    }
+
+    static String findPortByConfigFile(Project project, PsiFile containingFile) {
         String nameYml = "application.yml";
         String portByYmlFile = getPortByYamlFile(nameYml, project, containingFile);
         if (StringUtils.isNotBlank(portByYmlFile)) {
@@ -106,11 +112,7 @@ public class WebEnvironmentUtil {
                     String port = properties.getProperty("server.port");
                     if (StringUtils.isNotBlank(port)) {
                         if (containingFile != null) {
-                            String path = containingFile.getVirtualFile().getPath();
-                            String configFilePath = virtualFile.getPath();
-                            String projectBasePath1 = getProjectBasePath(path);
-                            String projectBasePath2 = getProjectBasePath(configFilePath);
-                            if (projectBasePath1.equals(projectBasePath2)) {
+                            if (sameContentRoot(project, containingFile, virtualFile)) {
                                 return port;
                             }
                         }
@@ -133,8 +135,8 @@ public class WebEnvironmentUtil {
             for (PsiFile psiFile : filesByName) {
                 String text = psiFile.getText();
                 try {
-                    Yaml yaml = new Yaml();
-                    Map<String, Object> map = yaml.load(text);
+                    Map<String, Object> map = new YAMLMapper().readValue(text, new TypeReference<Map<String, Object>>() {
+                    });
                     if (map != null && map.size() > 0) {
                         Object serverObj = map.get("server");
                         if (serverObj instanceof Map) {
@@ -143,11 +145,7 @@ public class WebEnvironmentUtil {
                             if (portObj != null) {
                                 String port = portObj.toString();
                                 if (containingFile != null) {
-                                    String path = containingFile.getVirtualFile().getPath();
-                                    String projectBasePath1 = getProjectBasePath(path);
-                                    String configFilePath = psiFile.getVirtualFile().getPath();
-                                    String projectBasePath2 = getProjectBasePath(configFilePath);
-                                    if (projectBasePath1.equals(projectBasePath2)) {
+                                    if (sameContentRoot(project, containingFile, psiFile.getVirtualFile())) {
                                         return port;
                                     }
                                 }
@@ -165,12 +163,13 @@ public class WebEnvironmentUtil {
         return null;
     }
 
-    private static String getProjectBasePath(String path) {
-        int indexOf = path.indexOf("src/");
-        if (indexOf != -1) {
-            return path.substring(0, path.indexOf("src/"));
+    private static boolean sameContentRoot(Project project, PsiFile containingFile, VirtualFile configFile) {
+        if (containingFile == null || containingFile.getVirtualFile() == null || configFile == null) {
+            return false;
         }
-        return "";
+        VirtualFile sourceRoot = ProjectFileIndex.getInstance(project).getContentRootForFile(containingFile.getVirtualFile());
+        VirtualFile configRoot = ProjectFileIndex.getInstance(project).getContentRootForFile(configFile);
+        return sourceRoot != null && sourceRoot.equals(configRoot);
     }
 
 }

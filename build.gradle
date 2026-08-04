@@ -21,7 +21,6 @@ dependencies {
 
     implementation 'commons-collections:commons-collections:3.2.2'
     implementation 'org.apache.commons:commons-lang3:3.14.0'
-    implementation 'commons-lang:commons-lang:2.6'
     implementation 'commons-codec:commons-codec:1.17.1'
     implementation 'commons-io:commons-io:2.16.1'
     implementation 'com.google.code.gson:gson:2.11.0'
@@ -32,6 +31,8 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.15.2'
     implementation 'com.fasterxml.jackson.module:jackson-module-parameter-names:2.15.2'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.2'
+    implementation 'org.yaml:snakeyaml:2.0'
 
 }
 
@@ -74,10 +75,19 @@ tasks.register('verifyPluginRuntimeLibraries') {
         def expectedJars = [
                 'commons-collections-3.2.2.jar',
                 'commons-lang3-3.14.0.jar',
-                'commons-lang-2.6.jar',
                 'commons-codec-1.17.1.jar',
                 'commons-io-2.16.1.jar',
-                'gson-2.11.0.jar'
+                'gson-2.11.0.jar',
+                'freemarker-2.3.31.jar',
+                'MDTool-1.2.4.jar',
+                'jackson-annotations-2.15.2.jar',
+                'jackson-core-2.15.2.jar',
+                'jackson-databind-2.15.2.jar',
+                'jackson-datatype-jdk8-2.15.2.jar',
+                'jackson-datatype-jsr310-2.15.2.jar',
+                'jackson-module-parameter-names-2.15.2.jar',
+                'jackson-dataformat-yaml-2.15.2.jar',
+                'snakeyaml-2.0.jar'
         ]
 
         assert jarNames.containsAll(expectedJars): "Missing plugin runtime libraries: ${expectedJars - jarNames}"

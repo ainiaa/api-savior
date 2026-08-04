@@ -53,7 +53,7 @@ public class PsiDocumentUtil {
                 start = packageStatement.getTextLength() + packageStatement.getTextOffset();
             }
             String insertText = newImportText.toString();
-            if (org.apache.commons.lang.StringUtils.isNotBlank(insertText)) {
+            if (org.apache.commons.lang3.StringUtils.isNotBlank(insertText)) {
                 document.insertString(start, insertText);
                 commitAndSaveDocument(psiDocumentManager, document);
             }
