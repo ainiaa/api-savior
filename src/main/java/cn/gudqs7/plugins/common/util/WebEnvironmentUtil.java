@@ -24,17 +24,18 @@ import java.util.Properties;
  */
 public class WebEnvironmentUtil {
 
-    public static String ip = null;
+    private static final ThreadLocal<String> IP = new ThreadLocal<>();
 
     public static String getIp() {
+        String ip = IP.get();
         if (ip != null) {
             return ip;
         }
         try {
             String defaultIp = PluginSettingHelper.getConfigItem(PluginSettingEnum.DEFAULT_IP);
             if (StringUtils.isNotBlank(defaultIp)) {
-                ip = defaultIp;
-                return ip;
+                IP.set(defaultIp);
+                return defaultIp;
             }
 
             String useRealIp = PluginSettingHelper.getConfigItem(PluginSettingEnum.USE_REAL_IP);
@@ -56,16 +57,16 @@ public class WebEnvironmentUtil {
                         }
                     }
                 }
-                ip = hostAddress;
+                IP.set(hostAddress);
                 return hostAddress;
             }
         } catch (UnknownHostException | SocketException ignored) {}
-        ip = "127.0.0.1";
+        IP.set("127.0.0.1");
         return "127.0.0.1";
     }
 
     public static void emptyIp() {
-        ip = null;
+        IP.remove();
     }
 
     /**

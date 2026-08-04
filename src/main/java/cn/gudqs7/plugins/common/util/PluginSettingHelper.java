@@ -17,7 +17,6 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
@@ -27,11 +26,6 @@ public class PluginSettingHelper {
 
     private static final String CONFIG_FILE_PATH = "docer-config.properties";
     private static final ThreadLocal<Map<String, String>> CONFIG = ThreadLocal.withInitial(() -> new HashMap<>(16));
-
-    /**
-     * 防止不同项目复用同一个缓存, 需按项目路径来分隔
-     */
-    private static final Map<String, VirtualFile> configFileMap = new ConcurrentHashMap<>(32);
 
     /**
      * 将配置保存到缓存
@@ -217,43 +211,49 @@ public class PluginSettingHelper {
      */
     @SneakyThrows
     public static Map<String, String> getConfigFromFile(Project project, VirtualFile currentVirtualFile) {
-        String projectBasePath = project.getBasePath();
-        VirtualFile configFile = configFileMap.get(projectBasePath);
-        if (configFile != null && configFile.exists()) {
-            return toMap(projectBasePath);
+        ProjectConfigFileCache configFileCache = project.getService(ProjectConfigFileCache.class);
+        VirtualFile cachedConfigFile = configFileCache.getConfigFile();
+        if (cachedConfigFile != null && cachedConfigFile.exists()) {
+            return toMap(cachedConfigFile);
         }
+        String projectBasePath = project.getBasePath();
         String defaultConfigPath = projectBasePath + File.separator + CONFIG_FILE_PATH;
         VirtualFile virtualFileByDefault = LocalFileSystem.getInstance().findFileByPath(defaultConfigPath);
         if (virtualFileByDefault != null) {
-            configFileMap.put(projectBasePath, virtualFileByDefault);
-            return toMap(projectBasePath);
+            configFileCache.setConfigFile(virtualFileByDefault);
+            return toMap(virtualFileByDefault);
         }
         PsiFile[] filesByName = FilenameIndex.getFilesByName(project, CONFIG_FILE_PATH, GlobalSearchScope.projectScope(project));
         if (filesByName.length > 0) {
             VirtualFile back = null;
             for (PsiFile psiFile : filesByName) {
                 VirtualFile virtualFile = psiFile.getVirtualFile();
+                if (virtualFile == null) {
+                    continue;
+                }
 
-                String path = currentVirtualFile.getPath();
                 String configFilePath = virtualFile.getPath();
-                String projectBasePath1 = getProjectBasePath(path);
-                String projectBasePath2 = getProjectBasePath(configFilePath);
-                if (projectBasePath1.equals(projectBasePath2)) {
-                    configFileMap.put(projectBasePath, virtualFile);
-                    return toMap(projectBasePath);
+                if (currentVirtualFile != null) {
+                    String projectBasePath1 = getProjectBasePath(currentVirtualFile.getPath());
+                    String projectBasePath2 = getProjectBasePath(configFilePath);
+                    if (projectBasePath1.equals(projectBasePath2)) {
+                        configFileCache.setConfigFile(virtualFile);
+                        return toMap(virtualFile);
+                    }
                 }
                 if (back == null) {
                     back = virtualFile;
                 }
             }
-            configFileMap.put(projectBasePath, back);
-            return toMap(projectBasePath);
+            if (back != null) {
+                configFileCache.setConfigFile(back);
+                return toMap(back);
+            }
         }
         return null;
     }
 
-    private static Map<String, String> toMap(String projectBasePath) throws IOException {
-        VirtualFile configFile = configFileMap.get(projectBasePath);
+    private static Map<String, String> toMap(VirtualFile configFile) throws IOException {
         Properties properties = new Properties();
         try (InputStream inputStream = configFile.getInputStream()) {
             properties.load(inputStream);

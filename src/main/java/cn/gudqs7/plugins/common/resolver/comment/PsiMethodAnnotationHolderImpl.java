@@ -8,9 +8,9 @@ import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.pojo.resolver.CommentInfoTag;
 import cn.gudqs7.plugins.common.pojo.resolver.RequestMapping;
 import cn.gudqs7.plugins.common.pojo.resolver.ResponseCodeInfo;
+import cn.gudqs7.plugins.common.resolver.RequestMappingResolver;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
 import cn.gudqs7.plugins.common.util.WebEnvironmentUtil;
-import cn.gudqs7.plugins.common.util.jetbrain.ExceptionUtil;
 import cn.gudqs7.plugins.common.util.structure.PsiAnnotationUtil;
 import cn.gudqs7.plugins.common.util.structure.PsiTypeUtil;
 import com.intellij.psi.*;
@@ -197,65 +197,16 @@ public class PsiMethodAnnotationHolderImpl extends AbstractAnnotationHolder {
     }
 
     private void dealRequestMapping(CommentInfo commentInfo) {
-        boolean hasMappingAnnotation = hasAnyOneAnnotation(QNAME_OF_MAPPING, QNAME_OF_GET_MAPPING, QNAME_OF_POST_MAPPING, QNAME_OF_PUT_MAPPING, QNAME_OF_DELETE_MAPPING, QNAME_OF_GAGEWAY_DELETE_MAPPING, QNAME_OF_GAGEWAY_GET_MAPPING, QNAME_OF_GAGEWAY_GET_MAPPING,QNAME_OF_GAGEWAY_POST_MAPPING, QNAME_OF_GAGEWAY_PUT_MAPPING);
-        if (hasMappingAnnotation) {
-            if (hasAnnotation(QNAME_OF_MAPPING)) {
-                List<String> path = getAnnotationListValueByQname(QNAME_OF_MAPPING, "value");
-                if (CollectionUtils.isEmpty(path)) {
-                    path = getAnnotationListValueByQname(QNAME_OF_MAPPING, "path");
-                }
-                String path0 = "";
-                if (CollectionUtils.isNotEmpty(path)) {
-                    path0 = path.get(0);
-                }
-                commentInfo.setUrl(path0);
-                String method;
-                List<String> methodList = getAnnotationListValueByQname(QNAME_OF_MAPPING, "method");
-                if (CollectionUtils.isEmpty(methodList)) {
-                    method = "GET/POST/PUT/DELETE";
-                } else {
-                    method = String.join("/", methodList);
-                }
-                commentInfo.setMethod(method);
-            }
-            dealHttpMethod(commentInfo, QNAME_OF_POST_MAPPING, RequestMapping.Method.POST);
-            dealHttpMethod(commentInfo, QNAME_OF_GET_MAPPING, RequestMapping.Method.GET);
-            dealHttpMethod(commentInfo, QNAME_OF_PUT_MAPPING, RequestMapping.Method.PUT);
-            dealHttpMethod(commentInfo, QNAME_OF_DELETE_MAPPING, RequestMapping.Method.DELETE);
-
-            dealHttpMethod(commentInfo, QNAME_OF_GAGEWAY_POST_MAPPING, RequestMapping.Method.POST);
-            dealHttpMethod(commentInfo, QNAME_OF_GAGEWAY_GET_MAPPING, RequestMapping.Method.GET);
-            dealHttpMethod(commentInfo, QNAME_OF_GAGEWAY_PUT_MAPPING, RequestMapping.Method.PUT);
-            dealHttpMethod(commentInfo, QNAME_OF_GAGEWAY_DELETE_MAPPING, RequestMapping.Method.DELETE);
-
-            // deal controller RequestMapping
-            String controllerUrl = "/";
+        List<RequestMappingResolver.MappingInfo> mappings = RequestMappingResolver.resolveMethodMappings(psiMethod);
+        if (!mappings.isEmpty()) {
+            RequestMappingResolver.MappingInfo mapping = mappings.get(0);
+            commentInfo.setMethod(mapping.getMethods().get(0).getMethod().equals("ALL")
+                    ? "GET/POST/PUT/DELETE" : String.join("/", mapping.getMethods().stream().map(method -> method.getMethod()).toArray(String[]::new)));
             PsiClass containingClass = psiMethod.getContainingClass();
-            if (containingClass == null) {
-                ExceptionUtil.handleSyntaxError(psiMethod.getName() + "'s Class");
-            }
-            PsiAnnotation psiAnnotation = containingClass.getAnnotation(QNAME_OF_MAPPING);
-            if (psiAnnotation != null) {
-                List<String> pathList = PsiAnnotationUtil.getAnnotationListValue(psiAnnotation, "value", null);
-                if (CollectionUtils.isEmpty(pathList)) {
-                    pathList = PsiAnnotationUtil.getAnnotationListValue(psiAnnotation, "path", null);
-                }
-                if (CollectionUtils.isNotEmpty(pathList)) {
-                    controllerUrl = pathList.get(0);
-                }
-                if (controllerUrl.startsWith("/")) {
-                    controllerUrl = controllerUrl.substring(1);
-                }
-                if (!controllerUrl.endsWith("/")) {
-                    controllerUrl = controllerUrl + "/";
-                }
-            }
+            String controllerUrl = containingClass == null ? "" : RequestMappingResolver.resolveClassPaths(containingClass).get(0);
             String hostPrefix = getHostPrefix();
-            String nowUrl = commentInfo.getUrl("");
-            if (nowUrl.startsWith("/")) {
-                nowUrl = nowUrl.substring(1);
-            }
-            commentInfo.setUrl(hostPrefix + controllerUrl + nowUrl);
+            String fullPath = RequestMappingResolver.joinPaths(controllerUrl, mapping.getPaths().get(0));
+            commentInfo.setUrl(hostPrefix + fullPath.substring(1));
             for (PsiElement child : psiMethod.getChildren()) {
                 if (child instanceof PsiParameterList) {
                     PsiParameterList parameterList = (PsiParameterList) child;
@@ -298,21 +249,6 @@ public class PsiMethodAnnotationHolderImpl extends AbstractAnnotationHolder {
             port = portByConfigFile;
         }
         return String.format(hostPrefix, ip, port);
-    }
-
-    private void dealHttpMethod(CommentInfo commentInfo, String qnameOfXxxMapping, String post) {
-        if (hasAnnotation(qnameOfXxxMapping)) {
-            List<String> path = getAnnotationListValueByQname(qnameOfXxxMapping, "value");
-            if (CollectionUtils.isEmpty(path)) {
-                path = getAnnotationListValueByQname(qnameOfXxxMapping, "path");
-            }
-            String path0 = "";
-            if (CollectionUtils.isNotEmpty(path)) {
-                path0 = path.get(0);
-            }
-            commentInfo.setUrl(path0);
-            commentInfo.setMethod(post);
-        }
     }
 
     @Override

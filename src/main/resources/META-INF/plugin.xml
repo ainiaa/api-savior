@@ -20,6 +20,7 @@
         <notificationGroup displayType="STICKY_BALLOON" id="Api Savior Error" bundle="group" key="notification.group.error.name"/>
 
         <projectService serviceImplementation="cn.gudqs7.plugins.search.MethodFilterConfiguration"/>
+        <projectService serviceImplementation="cn.gudqs7.plugins.common.util.ProjectConfigFileCache"/>
 
         <intentionAction>
             <className>cn.gudqs7.plugins.generate.getter.action.GetterGenerateAction</className>

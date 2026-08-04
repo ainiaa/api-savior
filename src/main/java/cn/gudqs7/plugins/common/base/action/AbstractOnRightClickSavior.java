@@ -1,6 +1,6 @@
 package cn.gudqs7.plugins.common.base.action;
 
-import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
+import cn.gudqs7.plugins.common.resolver.RequestMappingResolver;
 import cn.gudqs7.plugins.common.util.IndexIncrementUtil;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
 import cn.gudqs7.plugins.common.util.WebEnvironmentUtil;
@@ -102,8 +102,7 @@ public abstract class AbstractOnRightClickSavior extends AbstractAction implemen
      * @return 是否不带 Mapping 注解
      */
     protected boolean methodNotHaveMapping(PsiMethod psiMethod) {
-        AnnotationHolder psiMethodHolder = AnnotationHolder.getPsiMethodHolder(psiMethod);
-        return !psiMethodHolder.hasAnyOneAnnotation(AnnotationHolder.QNAME_OF_MAPPING, AnnotationHolder.QNAME_OF_GET_MAPPING, AnnotationHolder.QNAME_OF_POST_MAPPING, AnnotationHolder.QNAME_OF_PUT_MAPPING, AnnotationHolder.QNAME_OF_DELETE_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_DELETE_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_PUT_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_GET_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_POST_MAPPING);
+        return !RequestMappingResolver.hasMethodMapping(psiMethod);
     }
 
     /**
@@ -180,6 +179,7 @@ public abstract class AbstractOnRightClickSavior extends AbstractAction implemen
                     PluginSettingHelper.clearConfigCache();
                     PsiTypeUtil.clearGeneric();
                     IndexIncrementUtil.clear();
+                    WebEnvironmentUtil.emptyIp();
                 }
             }
         });

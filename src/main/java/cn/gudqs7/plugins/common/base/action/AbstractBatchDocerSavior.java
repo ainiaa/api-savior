@@ -6,6 +6,7 @@ import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
 import cn.gudqs7.plugins.common.util.IndexIncrementUtil;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
+import cn.gudqs7.plugins.common.util.WebEnvironmentUtil;
 import cn.gudqs7.plugins.common.util.file.FileUtil;
 import cn.gudqs7.plugins.common.util.jetbrain.ClipboardUtil;
 import cn.gudqs7.plugins.common.util.jetbrain.DialogUtil;
@@ -32,14 +33,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author wq
  */
-public abstract class AbstractBatchDocerSavior extends AbstractAction implements UpdateInBackground {
+public abstract class AbstractBatchDocerSavior<S> extends AbstractAction implements UpdateInBackground {
 
     @Override
     public void update0(@NotNull AnActionEvent e) {
@@ -119,6 +123,7 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
 
             String projectFilePath = project.getBasePath();
             String docRootDirPath = projectFilePath + File.separator + dirRoot;
+            String stagingDocRootDirPath = docRootDirPath + ".api-savior-tmp-" + UUID.randomUUID();
             String title = getModelTitle();
             AtomicBoolean hasCancelAtomic = new AtomicBoolean(false);
             String finalDirRoot = dirRoot;
@@ -132,59 +137,49 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
                         indicator.setText2(getProcessorModelSubTitle());
                         indicator.setFraction(0.05f);
 
-                        boolean runLoop = isRunLoop();
-                        if (runLoop) {
-                            // region loop
-                            float i = 1f;
-                            int size = finalPsiClassList.size();
-                            Map<String, Object> otherMap = new HashMap<>(8);
-                            runLoopBefore(project, indicator, hasCancelAtomic, finalPsiClassList, docRootDirPath, otherMap);
-                            for (PsiClass psiClass0 : finalPsiClassList) {
-                                indicator.checkCanceled();
-                                AtomicReference<CommentInfo> apiModelPropertyAtomic = new AtomicReference<>(null);
-                                AtomicReference<String> moduleNameAtomic = new AtomicReference<>("");
-
-                                IdeaApplicationUtil.runReadAction(() -> {
-                                    AnnotationHolder psiClassHolder = AnnotationHolder.getPsiClassHolder(psiClass0);
-                                    CommentInfo commentInfo = psiClassHolder.getCommentInfo();
-                                    apiModelPropertyAtomic.set(commentInfo);
-                                    String packageName = PsiClassUtil.getPackageName(psiClass0);
-                                    String moduleName = getModuleName(project, packageName, psiClass0, commentInfo);
-                                    moduleNameAtomic.set(moduleName);
-                                });
-                                CommentInfo commentInfo = apiModelPropertyAtomic.get();
-                                if (commentInfo == null || commentInfo.isHidden(false)) {
-                                    continue;
-                                }
-
-                                String moduleName = moduleNameAtomic.get();
-                                String fileParentDir = finalDirRoot + File.separator + moduleName;
-                                File parent = new File(projectFilePath, fileParentDir);
-                                String fileName = getFileName(psiClass0, commentInfo);
-                                String fullFileName = fileName + "." + getFileExtension();
-                                float fraction = i++ / size;
-                                runLoop(project, psiClass0, hasCancelAtomic, commentInfo, moduleName, fileName, parent, fileParentDir, fullFileName, otherMap, indicator, fraction);
+                        // region loop
+                        float i = 1f;
+                        int size = finalPsiClassList.size();
+                        S state = createState();
+                        Set<String> outputPaths = new HashSet<>();
+                        runLoopBefore(project, indicator, hasCancelAtomic, finalPsiClassList, stagingDocRootDirPath, state);
+                        for (PsiClass psiClass0 : finalPsiClassList) {
+                            indicator.checkCanceled();
+                            BatchClassInfo batchClassInfo = IdeaApplicationUtil.computeReadAction(
+                                    () -> createBatchClassInfo(project, psiClass0)
+                            );
+                            if (batchClassInfo == null) {
+                                continue;
                             }
-                            runLoopAfter(project, indicator, hasCancelAtomic, finalPsiClassList, docRootDirPath, otherMap);
-                            // endregion loop
-                        } else {
-                            runOnce(project, projectFilePath, docRootDirPath, finalPsiClassList, hasCancelAtomic, indicator);
+
+                            String moduleName = batchClassInfo.moduleName;
+                            String fileParentDir = finalDirRoot + File.separator + moduleName;
+                            File parent = new File(stagingDocRootDirPath, moduleName);
+                            String fileName = batchClassInfo.fileName;
+                            String fullFileName = uniqueFullFileName(fileParentDir, fileName, getFileExtension(), batchClassInfo.qualifiedName, outputPaths);
+                            float fraction = i++ / size;
+                            runLoop(project, psiClass0, hasCancelAtomic, moduleName, fileName, parent, fileParentDir, fullFileName, state, indicator, fraction);
                         }
+                        runLoopAfter(project, indicator, hasCancelAtomic, finalPsiClassList, stagingDocRootDirPath, state);
+                        // endregion loop
+                        commitDocRoot(stagingDocRootDirPath, docRootDirPath);
                         indicator.setText(getProcessFinishedModelTitle());
                         indicator.setText2(getProcessFinishedModelSubTitle());
                         indicator.setFraction(1f);
                         refreshProject(projectFilePath);
                     } catch (ProcessCanceledException canceledException) {
                         hasCancelAtomic.set(true);
-                        handleCancelTask(docRootDirPath, projectFilePath);
+                        handleCancelTask(stagingDocRootDirPath, projectFilePath);
                     } catch (Throwable e1) {
                         // 此处 catch 需保留, 因为不会这里抛出异常, 不会到外面的 catch
                         hasCancelAtomic.set(true);
+                        handleCancelTask(stagingDocRootDirPath, projectFilePath);
                         ExceptionUtil.handleException(e1);
                     } finally {
                         PluginSettingHelper.clearConfigCache();
                         PsiTypeUtil.clearGeneric();
                         IndexIncrementUtil.clear();
+                        WebEnvironmentUtil.emptyIp();
                     }
                 }
             });
@@ -217,6 +212,31 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
             }
             return firstQualifiedName.compareTo(secondQualifiedName);
         };
+    }
+
+    static String uniqueFullFileName(String directory, String fileName, String extension, String qualifiedName, Set<String> outputPaths) {
+        String fullFileName = fileName + "." + extension;
+        if (outputPaths.add(directory + File.separator + fullFileName)) {
+            return fullFileName;
+        }
+        String suffix = Integer.toUnsignedString(Objects.hashCode(qualifiedName), 36);
+        String candidate = fileName + "-" + suffix + "." + extension;
+        int duplicateNo = 2;
+        while (!outputPaths.add(directory + File.separator + candidate)) {
+            candidate = fileName + "-" + suffix + "-" + duplicateNo++ + "." + extension;
+        }
+        return candidate;
+    }
+
+    @Nullable
+    private BatchClassInfo createBatchClassInfo(Project project, PsiClass psiClass) {
+        CommentInfo commentInfo = AnnotationHolder.getPsiClassHolder(psiClass).getCommentInfo();
+        if (commentInfo == null || commentInfo.isHidden(false)) {
+            return null;
+        }
+        String packageName = PsiClassUtil.getPackageName(psiClass);
+        String moduleName = getModuleName(project, packageName, psiClass, commentInfo);
+        return new BatchClassInfo(moduleName, getFileName(psiClass, commentInfo), psiClass.getQualifiedName());
     }
 
     protected boolean isNotShow(@NotNull AnActionEvent e, Project project, PsiElement psiElement, PsiClass psiClass, PsiDirectory psiDirectory) {
@@ -315,12 +335,6 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
         return "生成完毕!";
     }
 
-    @NotNull
-    protected String getFullFileName(PsiClass psiClass0, CommentInfo commentInfo) {
-        // 文件名取注解中 tags 或 description, 取注释中第一行非 tag 注释或 @tags/@description 中的值
-        return getFileName(psiClass0, commentInfo) + "." + getFileExtension();
-    }
-
     protected String getFileName(PsiClass psiClass0, CommentInfo commentInfo) {
         return commentInfo.getItemName(psiClass0.getName());
     }
@@ -370,36 +384,15 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
         return "md";
     }
 
-    /**
-     * 是否走 for 循环遍历 PsiClass 信息列表来生成
-     * 是 走 processorRunByPsiClass()
-     * 否 走 processorRunOnce()
-     *
-     * @return true:是 false:否
-     */
-    protected boolean isRunLoop() {
-        return true;
+    protected S createState() {
+        return null;
     }
 
-    /**
-     * 只传参, 不做任何辅助操作, 如更新进度/计算文件路径/内容写入到文件等
-     *
-     * @param project           项目信息
-     * @param projectFilePath   项目路径
-     * @param docRootDirPath    doc 目录路径
-     * @param finalPsiClassList PsiClassList
-     * @param hasCancelAtomic   代码是否被取消终止(是则改变此变量中的布尔值)
-     * @param indicator         提供进度条能力, 设置主/副标题/进度
-     */
-    protected void runOnce(Project project, String projectFilePath, String docRootDirPath, Set<PsiClass> finalPsiClassList, AtomicBoolean hasCancelAtomic, ProgressIndicator indicator) throws InterruptedException {
+    protected void runLoopBefore(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, S state) throws Throwable {
 
     }
 
-    protected void runLoopBefore(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, Map<String, Object> otherMap) throws Throwable {
-
-    }
-
-    protected void runLoopAfter(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, Map<String, Object> otherMap) throws Throwable {
+    protected void runLoopAfter(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, S state) throws Throwable {
 
     }
 
@@ -409,26 +402,25 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
      * @param project         项目
      * @param psiClass0       类
      * @param hasCancelAtomic 是否中止任务
-     * @param commentInfo     类上注释/注解信息
      * @param moduleName      文档模块名称(默认为最后两层报名, 可通过 #module 设置)
      * @param fileName        文件名
      * @param parent          生成的文件目录
      * @param fileParentDir   文档目录路径(文档根目录下相对路径, 由固定前缀{@link #getDirPrefix}+模块名构成)
      * @param fullFileName    生成的文件名(不含目录)
-     * @param otherMap        辅助信息
+     * @param state           批量导出过程中的类型安全状态
      * @param indicator       进度条
      * @param fraction        for循环进度百分比, 可用于进度条
      */
-    protected void runLoop(Project project, PsiClass psiClass0, AtomicBoolean hasCancelAtomic, CommentInfo commentInfo, String moduleName, String fileName, File parent, String fileParentDir, String fullFileName, Map<String, Object> otherMap, ProgressIndicator indicator, float fraction) {
+    protected void runLoop(Project project, PsiClass psiClass0, AtomicBoolean hasCancelAtomic, String moduleName, String fileName, File parent, String fileParentDir, String fullFileName, S state, ProgressIndicator indicator, float fraction) throws Throwable {
         indicator.setText2("文件写入中：" + fileParentDir + File.separator + fullFileName);
         indicator.setFraction(fraction);
 
-        IdeaApplicationUtil.runReadAction(() -> {
-            String fileContent = runLoop0(psiClass0, project, commentInfo, moduleName, fileName, fullFileName, otherMap);
-            if (StringUtils.isNotBlank(fileContent)) {
-                FileUtil.writeStringToFile(fileContent, parent, fullFileName);
-            }
-        });
+        String fileContent = IdeaApplicationUtil.computeReadAction(
+                () -> runLoop0(psiClass0, project, AnnotationHolder.getPsiClassHolder(psiClass0).getCommentInfo(), moduleName, fileName, fullFileName, state)
+        );
+        if (StringUtils.isNotBlank(fileContent)) {
+            FileUtil.writeStringToFile(fileContent, parent, fullFileName);
+        }
     }
 
     /**
@@ -440,11 +432,11 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
      * @param moduleName   模块名称
      * @param fileName     文件名称
      * @param fullFileName 完整文件名称
-     * @param otherMap     额外辅助信息
+     * @param state        批量导出过程中的类型安全状态
      * @return 文件内容 可为空, 代表无需写入文件
      */
     @Nullable
-    protected String runLoop0(PsiClass psiClass0, Project project, CommentInfo commentInfo, String moduleName, String fileName, String fullFileName, Map<String, Object> otherMap) throws Throwable {
+    protected String runLoop0(PsiClass psiClass0, Project project, CommentInfo commentInfo, String moduleName, String fileName, String fullFileName, S state) throws Throwable {
         return null;
     }
 
@@ -462,15 +454,68 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
     }
 
     /**
-     * 取消后删除已生成的文件 (考虑先生成到temp, 再覆盖, 避免生成一半把原来的删掉)
+     * 取消后仅删除本次临时输出，保留上一次成功生成的文档。
      *
-     * @param docRootDirPath  doc 路径
+     * @param docRootDirPath  临时 doc 路径
      * @param projectFilePath 项目路径
      */
     protected void handleCancelTask(String docRootDirPath, String projectFilePath) {
-        File all = new File(docRootDirPath);
-        FileUtil.deleteDirectory(all);
+        FileUtil.deleteDirectory(new File(docRootDirPath));
         refreshProject(projectFilePath);
+    }
+
+    protected void commitDocRoot(String stagingDocRootDirPath, String docRootDirPath) throws IOException {
+        File stagingDocRoot = new File(stagingDocRootDirPath);
+        if (!stagingDocRoot.exists()) {
+            return;
+        }
+        File docRoot = new File(docRootDirPath);
+        File parent = docRoot.getParentFile();
+        if (parent == null) {
+            throw new IOException("无法确定文档目录的父路径: " + docRootDirPath);
+        }
+        File backupDocRoot = new File(parent, docRoot.getName() + ".api-savior-backup-" + UUID.randomUUID());
+        boolean movedOriginal = false;
+        try {
+            if (docRoot.exists()) {
+                moveDirectory(docRoot, backupDocRoot);
+                movedOriginal = true;
+            }
+            moveDirectory(stagingDocRoot, docRoot);
+        } catch (IOException exception) {
+            restoreDocRootAfterFailedCommit(docRoot, backupDocRoot, movedOriginal, exception);
+            throw exception;
+        }
+        if (backupDocRoot.exists()) {
+            FileUtil.deleteDirectory(backupDocRoot);
+        }
+    }
+
+    private void restoreDocRootAfterFailedCommit(File docRoot, File backupDocRoot, boolean movedOriginal, IOException exception) {
+        if (docRoot.exists()) {
+            File failedDocRoot = new File(docRoot.getParentFile(), docRoot.getName() + ".api-savior-failed-" + UUID.randomUUID());
+            try {
+                moveDirectory(docRoot, failedDocRoot);
+            } catch (IOException recoveryException) {
+                exception.addSuppressed(recoveryException);
+                return;
+            }
+        }
+        if (movedOriginal && backupDocRoot.exists()) {
+            try {
+                moveDirectory(backupDocRoot, docRoot);
+            } catch (IOException recoveryException) {
+                exception.addSuppressed(recoveryException);
+            }
+        }
+    }
+
+    protected void moveDirectory(File source, File target) throws IOException {
+        try {
+            Files.move(source.toPath(), target.toPath(), StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(source.toPath(), target.toPath());
+        }
     }
 
     /**
@@ -533,6 +578,19 @@ public abstract class AbstractBatchDocerSavior extends AbstractAction implements
                 PsiClass[] classes = psiJavaFile.getClasses();
                 psiClassList.addAll(Arrays.asList(classes));
             }
+        }
+    }
+
+    private static class BatchClassInfo {
+
+        private final String moduleName;
+        private final String fileName;
+        private final String qualifiedName;
+
+        private BatchClassInfo(String moduleName, String fileName, String qualifiedName) {
+            this.moduleName = moduleName;
+            this.fileName = fileName;
+            this.qualifiedName = qualifiedName;
         }
     }
 

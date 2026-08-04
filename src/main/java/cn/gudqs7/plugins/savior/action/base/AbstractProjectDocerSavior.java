@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author wq
  */
-public abstract class AbstractProjectDocerSavior extends AbstractBatchDocerSavior {
+public abstract class AbstractProjectDocerSavior extends AbstractBatchDocerSavior<AbstractProjectDocerSavior.ProjectDocState> {
 
     public static final String TOC = " \\[返回目录]\\(#目录\\)";
     protected JavaToDocSavior docSavior;
@@ -30,7 +30,7 @@ public abstract class AbstractProjectDocerSavior extends AbstractBatchDocerSavio
     }
 
     @Override
-    protected String runLoop0(PsiClass psiClass0, Project project, CommentInfo commentInfo, String moduleName, String fileName, String fullFileName, Map<String, Object> otherMap) throws Throwable {
+    protected String runLoop0(PsiClass psiClass0, Project project, CommentInfo commentInfo, String moduleName, String fileName, String fullFileName, ProjectDocState state) throws Throwable {
         Pair<String, List<String>> classMarkdownPair = docSavior.generateApiByServiceInterfaceV2(psiClass0, project);
         String classMarkdown = classMarkdownPair.getLeft();
         if (StringUtils.isBlank(classMarkdown)) {
@@ -40,8 +40,8 @@ public abstract class AbstractProjectDocerSavior extends AbstractBatchDocerSavio
         List<String> apiNameList = classMarkdownPair.getRight();
         String classMarkdown0 = classMarkdown;
         List<String> apiNameList0 = new ArrayList<>(32);
-        Set<String> methodSet = (Set<String>) otherMap.get("methodSet");
-        Map<String, Integer> apiNameNoMap = (Map<String, Integer>) otherMap.get("apiNameNoMap");
+        Set<String> methodSet = state.methodSet;
+        Map<String, Integer> apiNameNoMap = state.apiNameNoMap;
         for (String apiName : apiNameList) {
             String apiNameEscape = StringTool.escapeRegex(apiName);
             String originH1 = "# " + apiNameEscape;
@@ -67,41 +67,29 @@ public abstract class AbstractProjectDocerSavior extends AbstractBatchDocerSavio
 
 
         // 拼接 markdown 内容
-        StringBuilder allMarkdownSbf = (StringBuilder) otherMap.get("allMarkdown");
-        allMarkdownSbf.append(classMarkdown0).append("\n");
+        state.allMarkdown.append(classMarkdown0).append("\n");
 
         // 收集目录信息
-        Map<String, Map<String, List<String>>> toc = (Map<String, Map<String, List<String>>>) otherMap.get("toc");
-        Map<String, List<String>> moduleMarkdownMap = toc.computeIfAbsent(moduleName, ignore -> new LinkedHashMap<>(16));
+        Map<String, List<String>> moduleMarkdownMap = state.toc.computeIfAbsent(moduleName, ignore -> new LinkedHashMap<>(16));
         moduleMarkdownMap.put(fileName, apiNameList0);
         return classMarkdown;
     }
 
     @Override
-    protected void runLoopBefore(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, Map<String, Object> otherMap) throws Throwable {
-        // 初始化
-        StringBuilder allMarkdownSbf = new StringBuilder();
-        Map<String, Map<String, List<String>>> toc = new LinkedHashMap<>(16);
-        Set<String> methodSet = new HashSet<>(32);
-        Map<String, Integer> apiNameNoMap = new HashMap<>(32);
-        otherMap.put("allMarkdown", allMarkdownSbf);
-        otherMap.put("toc", toc);
-        otherMap.put("methodSet", methodSet);
-        otherMap.put("apiNameNoMap", apiNameNoMap);
+    protected ProjectDocState createState() {
+        return new ProjectDocState();
     }
 
     @Override
-    protected void runLoopAfter(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, Map<String, Object> otherMap) throws Throwable {
-        StringBuilder allMarkdownSbf = (StringBuilder) otherMap.get("allMarkdown");
-        if (allMarkdownSbf == null || allMarkdownSbf.length() == 0) {
+    protected void runLoopAfter(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, ProjectDocState state) throws Throwable {
+        if (state.allMarkdown.length() == 0) {
             return;
         }
 
         StringBuilder tocMarkdown = new StringBuilder();
         tocMarkdown.append("# 目录").append("\n");
 
-        Map<String, Map<String, List<String>>> toc = (Map<String, Map<String, List<String>>>) otherMap.get("toc");
-        for (Map.Entry<String, Map<String, List<String>>> entry : toc.entrySet()) {
+        for (Map.Entry<String, Map<String, List<String>>> entry : state.toc.entrySet()) {
             String moduleName = entry.getKey();
             Map<String, List<String>> moduleMap = entry.getValue();
 
@@ -118,7 +106,7 @@ public abstract class AbstractProjectDocerSavior extends AbstractBatchDocerSavio
             }
         }
 
-        String fullMarkdown = tocMarkdown + "\n" + allMarkdownSbf;
+        String fullMarkdown = tocMarkdown + "\n" + state.allMarkdown;
         String projectName = project.getName();
         File parent = new File(docRootDirPath);
         // todo 考虑添加配置, 是否对文件名加时间戳和Ymd信息
@@ -143,6 +131,14 @@ public abstract class AbstractProjectDocerSavior extends AbstractBatchDocerSavio
         }
         apiNameNoMap.put(apiName, no + 1);
         return no;
+    }
+
+    protected static class ProjectDocState {
+
+        private final StringBuilder allMarkdown = new StringBuilder();
+        private final Map<String, Map<String, List<String>>> toc = new LinkedHashMap<>(16);
+        private final Set<String> methodSet = new HashSet<>(32);
+        private final Map<String, Integer> apiNameNoMap = new HashMap<>(32);
     }
 
 }

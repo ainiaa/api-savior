@@ -23,12 +23,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
- * 导出相应信息成 AMP 格式 yaml
+ * 导出接口文档为 HTML
  *
  * @author wenquan
  * @date 2022/3/30
  */
-public class HtmlDocerSaviorAction extends AbstractBatchDocerSavior {
+public class HtmlDocerSaviorAction extends AbstractBatchDocerSavior<HtmlDocerSaviorAction.HtmlDocState> {
 
     protected JavaToDocSavior docSavior;
 
@@ -37,7 +37,7 @@ public class HtmlDocerSaviorAction extends AbstractBatchDocerSavior {
     }
 
     @Override
-    protected String runLoop0(PsiClass psiClass0, Project project, CommentInfo commentInfo, String moduleName, String fileName, String fullFileName, Map<String, Object> otherMap) throws Throwable {
+    protected String runLoop0(PsiClass psiClass0, Project project, CommentInfo commentInfo, String moduleName, String fileName, String fullFileName, HtmlDocState state) throws Throwable {
         Pair<String, List<String>> markdownPair = docSavior.generateApiByServiceInterfaceV2(psiClass0, project);
         String markdown = markdownPair.getLeft();
         List<String> apiNameList = markdownPair.getRight();
@@ -45,9 +45,8 @@ public class HtmlDocerSaviorAction extends AbstractBatchDocerSavior {
             return "";
         }
 
-        List<CategoryItem> categoryItemList = (List<CategoryItem>) otherMap.computeIfAbsent("categoryItemList", k -> new ArrayList<>());
         for (String apiName : apiNameList) {
-            categoryItemList.add(new CategoryItem(moduleName, fileName, moduleName + "/" + fullFileName + "#" + apiName, apiName));
+            state.categoryItemList.add(new CategoryItem(moduleName, fileName, moduleName + "/" + fullFileName + "#" + apiName, apiName));
         }
         String markdown2Html = MarkdownUtil.markdownToHtml(markdown);
         Map<String, Object> root = new HashMap<>(8);
@@ -57,16 +56,15 @@ public class HtmlDocerSaviorAction extends AbstractBatchDocerSavior {
     }
 
     @Override
-    protected void runLoopAfter(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, Map<String, Object> otherMap) throws Throwable {
-        List<CategoryItem> categoryItemList = (List<CategoryItem>) otherMap.computeIfAbsent("categoryItemList", k -> new ArrayList<>());
-        if (CollectionUtils.isNotEmpty(categoryItemList)) {
+    protected void runLoopAfter(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, HtmlDocState state) throws Throwable {
+        if (CollectionUtils.isNotEmpty(state.categoryItemList)) {
             List<Module> moduleList = new ArrayList<>();
-            Map<String, List<CategoryItem>> moduleMap = categoryItemList.stream().collect(Collectors.groupingBy(CategoryItem::getModuleName));
+            Map<String, List<CategoryItem>> moduleMap = groupByModule(state.categoryItemList);
             for (Map.Entry<String, List<CategoryItem>> entry : moduleMap.entrySet()) {
                 String key = entry.getKey();
                 List<CategoryItem> value = entry.getValue();
                 List<FileDir> fileDirList = new ArrayList<>();
-                Map<String, List<CategoryItem>> fileDirMap = value.stream().collect(Collectors.groupingBy(CategoryItem::getFileName));
+                Map<String, List<CategoryItem>> fileDirMap = value.stream().collect(Collectors.groupingBy(CategoryItem::getFileName, LinkedHashMap::new, Collectors.toList()));
                 for (Map.Entry<String, List<CategoryItem>> listEntry : fileDirMap.entrySet()) {
                     String dirKey = listEntry.getKey();
                     List<CategoryItem> dirValue = listEntry.getValue();
@@ -104,6 +102,20 @@ public class HtmlDocerSaviorAction extends AbstractBatchDocerSavior {
     @Override
     protected @NotNull String getFileExtension() {
         return "html";
+    }
+
+    static Map<String, List<CategoryItem>> groupByModule(List<CategoryItem> categoryItemList) {
+        return categoryItemList.stream().collect(Collectors.groupingBy(CategoryItem::getModuleName, LinkedHashMap::new, Collectors.toList()));
+    }
+
+    @Override
+    protected HtmlDocState createState() {
+        return new HtmlDocState();
+    }
+
+    protected static class HtmlDocState {
+
+        private final List<CategoryItem> categoryItemList = new ArrayList<>();
     }
 
     @Data

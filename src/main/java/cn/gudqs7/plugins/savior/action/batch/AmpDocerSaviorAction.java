@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author wenquan
  * @date 2022/3/30
  */
-public class AmpDocerSaviorAction extends AbstractBatchDocerSavior {
+public class AmpDocerSaviorAction extends AbstractBatchDocerSavior<AmpDocerSaviorAction.AmpDocState> {
 
     protected JavaToAmpSavior javaToAmpSavior;
 
@@ -45,32 +45,29 @@ public class AmpDocerSaviorAction extends AbstractBatchDocerSavior {
     }
 
     @Override
-    protected String runLoop0(PsiClass psiClass0, Project project, CommentInfo commentInfo, String moduleName, String fileName, String fullFileName, Map<String, Object> otherMap) throws Throwable {
+    protected String runLoop0(PsiClass psiClass0, Project project, CommentInfo commentInfo, String moduleName, String fileName, String fullFileName, AmpDocState state) throws Throwable {
         // 将数据格式化成 yaml
         Map<String, Object> apis = javaToAmpSavior.generateAmpScheme(psiClass0, project);
         if (MapUtils.isEmpty(apis)) {
             return null;
         }
         // 将 apis 收集起来
-        Map<String, Object> allApis = (Map<String, Object>) otherMap.get("apis");
-        allApis.putAll(apis);
+        state.apis.putAll(apis);
 
         return generateYaml(apis);
     }
 
     @Override
-    protected void runLoopBefore(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, Map<String, Object> otherMap) throws Throwable {
-        Map<String, Object> allApis = new LinkedHashMap<>(16);
-        otherMap.put("apis", allApis);
+    protected AmpDocState createState() {
+        return new AmpDocState();
     }
 
     @Override
-    protected void runLoopAfter(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, Map<String, Object> otherMap) throws Throwable {
-        Map<String, Object> allApis = (Map<String, Object>) otherMap.get("apis");
-        String yaml = generateYaml(allApis);
-        if (MapUtils.isEmpty(allApis)) {
+    protected void runLoopAfter(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, AmpDocState state) throws Throwable {
+        if (MapUtils.isEmpty(state.apis)) {
             return;
         }
+        String yaml = generateYaml(state.apis);
 
         String projectName = project.getName();
         File parent = new File(docRootDirPath);
@@ -94,5 +91,10 @@ public class AmpDocerSaviorAction extends AbstractBatchDocerSavior {
 
     static String generateYaml(Map<String, Object> apis) throws JsonProcessingException {
         return new YAMLMapper().writeValueAsString(Collections.singletonMap("apis", apis));
+    }
+
+    protected static class AmpDocState {
+
+        private final Map<String, Object> apis = new LinkedHashMap<>(16);
     }
 }

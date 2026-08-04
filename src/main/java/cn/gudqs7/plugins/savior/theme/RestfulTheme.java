@@ -6,6 +6,7 @@ import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.pojo.resolver.RequestMapping;
 import cn.gudqs7.plugins.common.pojo.resolver.StructureAndCommentInfo;
 import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
+import cn.gudqs7.plugins.common.resolver.RequestMappingResolver;
 import cn.gudqs7.plugins.common.util.JsonUtil;
 import cn.gudqs7.plugins.savior.enums.ThemeType;
 import cn.gudqs7.plugins.savior.pojo.PostmanKvInfo;
@@ -60,7 +61,7 @@ public class RestfulTheme implements Theme {
     @Override
     public boolean handleMethodHidden(AnnotationHolder annotationHolder) {
         // 过滤非 Controller 的方法
-        return !annotationHolder.hasAnyOneAnnotation(AnnotationHolder.QNAME_OF_MAPPING, AnnotationHolder.QNAME_OF_GET_MAPPING, AnnotationHolder.QNAME_OF_POST_MAPPING, AnnotationHolder.QNAME_OF_PUT_MAPPING, AnnotationHolder.QNAME_OF_DELETE_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_DELETE_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_GET_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_POST_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_PUT_MAPPING);
+        return !RequestMappingResolver.hasMappingAnnotation(annotationHolder);
     }
 
     @Override

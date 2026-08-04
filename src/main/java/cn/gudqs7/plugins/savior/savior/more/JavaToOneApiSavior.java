@@ -33,7 +33,7 @@ import java.util.*;
  * @author wq
  * @date 2021/5/19
  */
-public class JavaToOneApiSavior extends AbstractSavior<Void> {
+public class JavaToOneApiSavior extends AbstractSavior<JavaToOneApiSavior.OneApiRequest> {
 
     private final Java2ComplexReader java2ComplexReader;
 
@@ -42,16 +42,20 @@ public class JavaToOneApiSavior extends AbstractSavior<Void> {
         this.java2ComplexReader = new Java2ComplexReader(theme);
     }
 
-    public void generateOneApi(PsiClass psiClass, Project project) {
+    /**
+     * 必须在 ReadAction 内调用；返回值不再访问 PSI，可在读锁外上传。
+     */
+    public List<OneApiRequest> collectOneApiRequests(PsiClass psiClass, Project project) {
         AnnotationHolder psiClassHolder = AnnotationHolder.getPsiClassHolder(psiClass);
         CommentInfo commentInfo = psiClassHolder.getCommentInfo();
         boolean hidden = commentInfo.isHidden(false);
         if (hidden) {
-            return;
+            return Collections.emptyList();
         }
         String pid = commentInfo.getSingleStr(MoreCommentTagEnum.AMP_PID.getTag(), "");
 
         String interfaceClassName = psiClass.getQualifiedName();
+        List<OneApiRequest> requests = new ArrayList<>();
 
         List<PsiMethod> methods = getMethodList(psiClass);
         for (PsiMethod method : methods) {
@@ -59,21 +63,24 @@ public class JavaToOneApiSavior extends AbstractSavior<Void> {
             if (StringUtils.isBlank(actionName)) {
                 continue;
             }
-            generateAmpApi(project, interfaceClassName, method, pid);
+            OneApiRequest request = createOneApiRequest(project, interfaceClassName, method, pid);
+            if (request != null) {
+                requests.add(request);
+            }
         }
+        return requests;
     }
 
-    public void generateAmpApi(Project project, String interfaceClassName, PsiMethod publicMethod, String pid) {
+    private OneApiRequest createOneApiRequest(Project project, String interfaceClassName, PsiMethod publicMethod, String pid) {
         Map<String, Object> param = new HashMap<>(16);
         if (StringUtils.isNotBlank(pid)) {
             param.put("pid", pid);
         }
-        getDataByMethod(project, interfaceClassName, publicMethod, param, false);
+        return getDataByMethod(project, interfaceClassName, publicMethod, param, false);
     }
 
     @Override
-    protected Void getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param) {
-        Project project = apiMethodInfo.getProject();
+    protected OneApiRequest getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param) {
         PsiMethod publicMethod = apiMethodInfo.getPublicMethod();
         CommentInfo commentInfo = apiMethodInfo.getCommentInfo();
         String interfaceClassName = apiMethodInfo.getInterfaceClassName();
@@ -128,22 +135,39 @@ public class JavaToOneApiSavior extends AbstractSavior<Void> {
         //noinspection unchecked
         returnJava2jsonMap = (Map<String, Object>) returnJava2jsonMap.getOrDefault(MapKeyConstant.RETURN_FIELD_NAME, new HashMap<>());
 
-        if (!noMain) {
-            Map<String, Object> java2jsonMap = java2ComplexReader.read(paramStructureAndCommentInfo);
-            boolean create = StringUtils.isBlank(mode) || "create".equals(mode);
-            if (create) {
-                saveOrUpdateMain(java2jsonMap, returnJava2jsonMap, interfaceName, actionName, projectCode, catalogId, createUrl, defaultTagName, apiName, header);
-            } else {
-                saveOrUpdateMain(java2jsonMap, returnJava2jsonMap, interfaceName, actionName, projectCode, catalogId, updateUrl, currentTag, apiName, header);
-            }
-        }
-        if (!noTag) {
-            updateTag(returnJava2jsonMap, actionName, projectCode, updateTagUrl, defaultTagName, apiName, header, dataSize);
-        }
-        return null;
+        Map<String, Object> java2jsonMap = noMain ? Collections.emptyMap() : java2ComplexReader.read(paramStructureAndCommentInfo);
+        boolean create = StringUtils.isBlank(mode) || "create".equals(mode);
+        String mainBody = noMain ? null : createMainRequestBody(java2jsonMap, returnJava2jsonMap, interfaceName,
+                projectCode, catalogId, create ? defaultTagName : currentTag, apiName);
+        String tagBody = noTag ? null : createTagRequestBody(returnJava2jsonMap, projectCode, defaultTagName, apiName, dataSize);
+        return new OneApiRequest(actionName, create ? createUrl : updateUrl, updateTagUrl, mainBody, tagBody, header);
     }
 
-    private void updateTag(Map<String, Object> resultJava2json, String actionName, String projectCode, String updateTagUrl, String defaultTagName, String apiName, Map<String, String> header, String dataSize) {
+    public void upload(OneApiRequest request) {
+        if (request.mainBody != null) {
+            String mainResponse = HttpUtil.sendHttpWithBody(request.mainUrl, "POST", request.mainBody, request.header);
+            showErrorTip(request.actionName, mainResponse, "create");
+        }
+        if (request.tagBody != null) {
+            String tagResponse = HttpUtil.sendHttpWithBody(request.updateTagUrl, "POST", request.tagBody, request.header);
+            showErrorTip(request.actionName, tagResponse, "update tag");
+        }
+    }
+
+    public void upload(List<OneApiRequest> requests) {
+        upload(requests, () -> {
+        });
+    }
+
+    public void upload(List<OneApiRequest> requests, Runnable cancellationCheck) {
+        for (OneApiRequest request : requests) {
+            cancellationCheck.run();
+            upload(request);
+            cancellationCheck.run();
+        }
+    }
+
+    private String createTagRequestBody(Map<String, Object> resultJava2json, String projectCode, String defaultTagName, String apiName, String dataSize) {
         Map<String, Object> data = getResultExample(resultJava2json, dataSize, true);
         Map<String, Object> tagResponse = new LinkedHashMap<>(8);
         tagResponse.put("successResponse", true);
@@ -158,9 +182,7 @@ public class JavaToOneApiSavior extends AbstractSavior<Void> {
         tagBody.put("projectCode", projectCode);
         tagBody.put("tagResponse", tagResponse);
 
-        String tagBodyStr = toJson(tagBody);
-        String tagRes = HttpUtil.sendHttpWithBody(updateTagUrl, "POST", tagBodyStr, header);
-        showErrorTip(actionName, tagRes, "update tag");
+        return toJson(tagBody);
     }
 
     private String toJson(Map<String, Object> tagBody) {
@@ -207,7 +229,8 @@ public class JavaToOneApiSavior extends AbstractSavior<Void> {
         }));
     }
 
-    private void saveOrUpdateMain(Map<String, Object> java2json, Map<String, Object> resultJava2json, String interfaceName, String actionName, String projectCode, String catalogId, String createUrl, String defaultTagName, String apiName, Map<String, String> header) {
+    private String createMainRequestBody(Map<String, Object> java2json, Map<String, Object> resultJava2json, String interfaceName,
+                                         String projectCode, String catalogId, String currentTag, String apiName) {
         List<Map<String, Object>> requestParamList = getRequestParamList(java2json);
         List<Map<String, Object>> responseParamList = getResponseParamList(resultJava2json);
         Map<String, Object> creator = new LinkedHashMap<>(32);
@@ -223,7 +246,7 @@ public class JavaToOneApiSavior extends AbstractSavior<Void> {
         requestBody.put("apiName", apiName);
         requestBody.put("method", "ALL");
         requestBody.put("description", interfaceName);
-        requestBody.put("currentTag", defaultTagName);
+        requestBody.put("currentTag", currentTag);
         requestBody.put("requestParams", requestParamList);
         requestBody.put("responseParams", responseParamList);
         requestBody.put("headerParams", new ArrayList<>());
@@ -234,9 +257,7 @@ public class JavaToOneApiSavior extends AbstractSavior<Void> {
         requestBody.put("gmtCreate", "2022-03-29T12:19:37.000Z");
         requestBody.put("gmtModified", "2022-03-29T12:19:37.000Z");
 
-        String createBodyStr = JsonUtil.toJson(requestBody);
-        String createRes = HttpUtil.sendHttpWithBody(createUrl, "POST", createBodyStr, header);
-        showErrorTip(actionName, createRes, "create");
+        return JsonUtil.toJson(requestBody);
     }
 
     private void showErrorTip(String actionName, String createRes, final String operate) {
@@ -481,6 +502,26 @@ public class JavaToOneApiSavior extends AbstractSavior<Void> {
         parameter.put("type", type);
         parameter.put("description", title);
         return parameter;
+    }
+
+    public static class OneApiRequest {
+
+        private final String actionName;
+        private final String mainUrl;
+        private final String updateTagUrl;
+        private final String mainBody;
+        private final String tagBody;
+        private final Map<String, String> header;
+
+        private OneApiRequest(String actionName, String mainUrl, String updateTagUrl, String mainBody, String tagBody,
+                              Map<String, String> header) {
+            this.actionName = actionName;
+            this.mainUrl = mainUrl;
+            this.updateTagUrl = updateTagUrl;
+            this.mainBody = mainBody;
+            this.tagBody = tagBody;
+            this.header = header;
+        }
     }
 
 }

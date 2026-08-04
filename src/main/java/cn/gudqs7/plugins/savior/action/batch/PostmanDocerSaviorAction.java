@@ -3,7 +3,6 @@ package cn.gudqs7.plugins.savior.action.batch;
 import cn.gudqs7.plugins.common.base.action.AbstractBatchDocerSavior;
 import cn.gudqs7.plugins.common.consts.MapKeyConstant;
 import cn.gudqs7.plugins.common.enums.PluginSettingEnum;
-import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.util.JsonUtil;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
 import cn.gudqs7.plugins.common.util.api.PostmanApiUtil;
@@ -18,7 +17,6 @@ import com.intellij.psi.PsiClass;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -28,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author wq
  */
-public class PostmanDocerSaviorAction extends AbstractBatchDocerSavior {
+public class PostmanDocerSaviorAction extends AbstractBatchDocerSavior<PostmanDocerSaviorAction.PostmanDocState> {
 
 
     protected JavaToPostmanSavior postmanSavior;
@@ -38,45 +36,34 @@ public class PostmanDocerSaviorAction extends AbstractBatchDocerSavior {
     }
 
     @Override
-    protected void runLoopBefore(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String apiDocPath, Map<String, Object> otherMap) throws Throwable {
-        Map<String, List<Map<String, Object>>> itemListMap = new LinkedHashMap<>(16);
-        otherMap.put("itemListMap", itemListMap);
-        otherMap.put("psiClassCount", 0);
+    protected PostmanDocState createState() {
+        return new PostmanDocState();
     }
 
     @Override
-    protected void runLoop(Project project, PsiClass psiClass0, AtomicBoolean hasCancelAtomic, CommentInfo commentInfo, String moduleName, String fileName, File parent, String fileParentDir, String fullFileName, Map<String, Object> otherMap, ProgressIndicator indicator, float fraction) {
-        Map<String, List<Map<String, Object>>> itemListMap0 = getItemListMap0(otherMap);
-        if (itemListMap0 == null) {
-            return;
-        }
-        Integer psiClassCount = (Integer) otherMap.getOrDefault("psiClassCount", 0);
-        otherMap.put("psiClassCount", psiClassCount + 1);
+    protected void runLoop(Project project, PsiClass psiClass0, AtomicBoolean hasCancelAtomic, String moduleName, String fileName, File parent, String fileParentDir, String fullFileName, PostmanDocState state, ProgressIndicator indicator, float fraction) throws Throwable {
+        state.psiClassCount++;
 
-        indicator.setText2("处理中：" + moduleName + " - " + commentInfo.getItemName(psiClass0.getName()));
+        indicator.setText2("处理中：" + moduleName + " - " + fileName);
         indicator.setFraction(fraction);
 
-        List<Map<String, Object>> itemList = itemListMap0.computeIfAbsent(moduleName, k -> new ArrayList<>(16));
+        List<Map<String, Object>> itemList = state.itemListMap.computeIfAbsent(moduleName, k -> new ArrayList<>(16));
         IdeaApplicationUtil.runReadAction(() -> {
             Map<String, Object> postmanItem = postmanSavior.generatePostmanItem(psiClass0, project);
             if (postmanItem != null) {
                 Object o = postmanItem.remove(MapKeyConstant.HOST_PORT);
                 if (o instanceof String) {
-                    otherMap.put("hostAndPort", o);
+                    state.hostAndPort = (String) o;
                 }
-                otherMap.put("lastPostmanItem", postmanItem);
+                state.lastPostmanItem = postmanItem;
                 itemList.add(postmanItem);
             }
         });
     }
 
     @Override
-    protected void runLoopAfter(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, Map<String, Object> otherMap) throws Throwable {
-        Map<String, List<Map<String, Object>>> itemListMap0 = getItemListMap0(otherMap);
-        if (itemListMap0 == null) {
-            return;
-        }
-        String hostAndPort = otherMap.getOrDefault("hostAndPort", "").toString();
+    protected void runLoopAfter(Project project, ProgressIndicator indicator, AtomicBoolean hasCancelAtomic, Set<PsiClass> finalPsiClassList, String docRootDirPath, PostmanDocState state) throws Throwable {
+        String hostAndPort = state.hostAndPort;
 
         String projectName = project.getName();
         String postmanName = projectName;
@@ -98,7 +85,7 @@ public class PostmanDocerSaviorAction extends AbstractBatchDocerSavior {
         }
 
         List<Map<String, Object>> itemList = new ArrayList<>(16);
-        for (Map.Entry<String, List<Map<String, Object>>> entry : itemListMap0.entrySet()) {
+        for (Map.Entry<String, List<Map<String, Object>>> entry : state.itemListMap.entrySet()) {
             String key = entry.getKey();
             List<Map<String, Object>> list = entry.getValue();
             if (!CollectionUtils.isEmpty(list)) {
@@ -110,9 +97,8 @@ public class PostmanDocerSaviorAction extends AbstractBatchDocerSavior {
             }
         }
 
-        Integer psiClassCount = (Integer) otherMap.getOrDefault("psiClassCount", 0);
-        if (psiClassCount == 1) {
-            Map<String, Object> lastPostmanItem = (Map<String, Object>) otherMap.get("lastPostmanItem");
+        if (state.psiClassCount == 1) {
+            Map<String, Object> lastPostmanItem = state.lastPostmanItem;
             if (lastPostmanItem == null) {
                 return;
             }
@@ -156,15 +142,6 @@ public class PostmanDocerSaviorAction extends AbstractBatchDocerSavior {
         }
     }
 
-    @Nullable
-    private Map<String, List<Map<String, Object>>> getItemListMap0(Map<String, Object> otherMap) {
-        Object itemListMap = otherMap.get("itemListMap");
-        if (!(itemListMap instanceof Map)) {
-            return null;
-        }
-        return (Map<String, List<Map<String, Object>>>) itemListMap;
-    }
-
     private void saveOrUpdateToPostman(String postmanName, boolean postmanOverride, String postmanKey, String collectionJson) {
         if (postmanOverride) {
             PostmanApiUtil.updateCollection(postmanName, collectionJson, postmanKey);
@@ -186,6 +163,14 @@ public class PostmanDocerSaviorAction extends AbstractBatchDocerSavior {
     @Override
     protected boolean isNeedDealPsiClass(PsiClass psiClass, Project project) {
         return PsiClassUtil.isControllerOrFeign(psiClass);
+    }
+
+    protected static class PostmanDocState {
+
+        private final Map<String, List<Map<String, Object>>> itemListMap = new LinkedHashMap<>(16);
+        private int psiClassCount;
+        private String hostAndPort = "";
+        private Map<String, Object> lastPostmanItem;
     }
 
 }

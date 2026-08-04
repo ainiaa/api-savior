@@ -2,7 +2,6 @@ package cn.gudqs7.plugins.savior.action.batch;
 
 import cn.gudqs7.plugins.common.base.action.AbstractBatchDocerSavior;
 import cn.gudqs7.plugins.common.enums.PluginSettingEnum;
-import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
 import cn.gudqs7.plugins.common.util.jetbrain.IdeaApplicationUtil;
 import cn.gudqs7.plugins.common.util.structure.PsiClassUtil;
@@ -17,7 +16,6 @@ import com.intellij.psi.PsiElement;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -26,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author wenquan
  * @date 2022/3/30
  */
-public class OneApiDocerSaviorAction extends AbstractBatchDocerSavior {
+public class OneApiDocerSaviorAction extends AbstractBatchDocerSavior<Void> {
 
     protected JavaToOneApiSavior javaToOneApiSavior;
 
@@ -40,13 +38,14 @@ public class OneApiDocerSaviorAction extends AbstractBatchDocerSavior {
     }
 
     @Override
-    protected void runLoop(Project project, PsiClass psiClass0, AtomicBoolean hasCancelAtomic, CommentInfo commentInfo, String moduleName, String fileName, File parent, String fileParentDir, String fullFileName, Map<String, Object> otherMap, ProgressIndicator indicator, float fraction) {
-        indicator.setText2("处理中：" + moduleName + " - " + commentInfo.getItemName(psiClass0.getName()));
+    protected void runLoop(Project project, PsiClass psiClass0, AtomicBoolean hasCancelAtomic, String moduleName, String fileName, File parent, String fileParentDir, String fullFileName, Void state, ProgressIndicator indicator, float fraction) throws Throwable {
+        indicator.setText2("处理中：" + moduleName + " - " + fileName);
         indicator.setFraction(fraction);
 
-        IdeaApplicationUtil.runReadAction(() -> {
-            javaToOneApiSavior.generateOneApi(psiClass0, project);
-        });
+        javaToOneApiSavior.upload(
+                IdeaApplicationUtil.computeReadAction(() -> javaToOneApiSavior.collectOneApiRequests(psiClass0, project)),
+                indicator::checkCanceled
+        );
     }
 
     @Override

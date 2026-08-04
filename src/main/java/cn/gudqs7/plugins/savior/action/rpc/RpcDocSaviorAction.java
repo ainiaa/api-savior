@@ -1,6 +1,6 @@
 package cn.gudqs7.plugins.savior.action.rpc;
 
-import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
+import cn.gudqs7.plugins.common.resolver.RequestMappingResolver;
 import cn.gudqs7.plugins.common.util.structure.PsiClassUtil;
 import cn.gudqs7.plugins.savior.action.base.AbstractDocerSavior;
 import cn.gudqs7.plugins.savior.theme.ThemeHelper;
@@ -21,9 +21,7 @@ public class RpcDocSaviorAction extends AbstractDocerSavior {
     @Override
     protected void checkPsiMethod(PsiMethod psiMethod, Project project, AnActionEvent e) {
         // 不带 mapping 注解的
-        AnnotationHolder psiMethodHolder = AnnotationHolder.getPsiMethodHolder(psiMethod);
-        boolean hasMappingAnnotation = psiMethodHolder.hasAnyOneAnnotation(AnnotationHolder.QNAME_OF_MAPPING, AnnotationHolder.QNAME_OF_GET_MAPPING, AnnotationHolder.QNAME_OF_POST_MAPPING, AnnotationHolder.QNAME_OF_PUT_MAPPING, AnnotationHolder.QNAME_OF_DELETE_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_DELETE_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_GET_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_POST_MAPPING, AnnotationHolder.QNAME_OF_GAGEWAY_PUT_MAPPING);
-        if (hasMappingAnnotation) {
+        if (RequestMappingResolver.hasMethodMapping(psiMethod)) {
             notVisible(e);
         }
     }
