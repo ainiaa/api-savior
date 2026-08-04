@@ -5,6 +5,10 @@ import com.intellij.testFramework.LightVirtualFile;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import java.util.Collections;
 
 class ProjectConfigFileCacheTest {
 
@@ -19,6 +23,18 @@ class ProjectConfigFileCacheTest {
 
         assertSame(moduleA, cache.getConfigFile("module-a"));
         assertSame(moduleB, cache.getConfigFile("module-b"));
+    }
+
+    @Test
+    void cachesConfigUntilTheConfigFileChanges() {
+        ProjectConfigFileCache cache = new ProjectConfigFileCache();
+        LightVirtualFile configFile = new LightVirtualFile("docer-config.properties", "theme=one");
+
+        cache.setConfig("module-a", configFile, Collections.singletonMap("theme", "one"));
+
+        assertEquals("one", cache.getConfig("module-a", configFile).get("theme"));
+        configFile.setContent(null, "theme=two", false);
+        assertNull(cache.getConfig("module-a", configFile));
     }
 
     private VirtualFile virtualFile(String path) {

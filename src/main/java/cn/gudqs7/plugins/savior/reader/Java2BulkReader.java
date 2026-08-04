@@ -13,6 +13,7 @@ import cn.gudqs7.plugins.savior.theme.Theme;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +44,7 @@ public class Java2BulkReader extends AbstractJsonReader<List<PostmanKvInfo>> {
 
     @Override
     protected List<PostmanKvInfo> handleReturnNull() {
-        return null;
+        return Collections.emptyList();
     }
 
     private List<PostmanKvInfo> getBulkList(Map<String, Object> json, String prefix) {

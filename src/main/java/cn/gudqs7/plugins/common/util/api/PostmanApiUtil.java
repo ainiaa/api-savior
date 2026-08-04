@@ -19,8 +19,7 @@ public class PostmanApiUtil {
         Map<String, String> headers = new HashMap<>(2);
         headers.put("X-API-Key", key);
         headers.put("Content-Type", "application/json");
-        String body = HttpUtil.sendHttpWithBody(url, "POST", json, headers);
-        System.out.println("addCollection: \n" + body);
+        HttpUtil.sendHttpWithBody(url, "POST", json, headers);
     }
 
     public static void updateCollection(String name, String json, String key) {
@@ -28,7 +27,6 @@ public class PostmanApiUtil {
         Map<String, String> headers = new HashMap<>(2);
         headers.put("X-API-Key", key);
         String allCollectionRes = HttpUtil.sendHttpWithBody(url, "GET", null, headers);
-        System.out.println("allCollectionRes: \n" + allCollectionRes);
 
         GsonBuilder gsonBuilder = new GsonBuilder();
         Gson gson = gsonBuilder.create();
@@ -60,8 +58,7 @@ public class PostmanApiUtil {
         Map<String, String> headers = new HashMap<>(2);
         headers.put("X-API-Key", key);
         headers.put("Content-Type", "application/json");
-        String body = HttpUtil.sendHttpWithBody(url, "PUT", json, headers);
-        System.out.println("updateCollection0: \n" + body);
+        HttpUtil.sendHttpWithBody(url, "PUT", json, headers);
     }
 
 

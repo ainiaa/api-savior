@@ -22,6 +22,7 @@ public interface AnnotationHolder {
     String QNAME_OF_MAPPING = "org.springframework.web.bind.annotation.RequestMapping";
     String QNAME_OF_GET_MAPPING = "org.springframework.web.bind.annotation.GetMapping";
     String QNAME_OF_POST_MAPPING = "org.springframework.web.bind.annotation.PostMapping";
+    String QNAME_OF_PATCH_MAPPING = "org.springframework.web.bind.annotation.PatchMapping";
 
     String QNAME_OF_GAGEWAY_POST_MAPPING = "com.ddmc.gateway.bg.client.annotation.HttpApiPostMapping";
     String QNAME_OF_GAGEWAY_GET_MAPPING = "com.ddmc.gateway.bg.client.annotation.HttpApiGetMapping";

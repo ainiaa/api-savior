@@ -29,4 +29,9 @@ class ApiDocumentTest {
         assertTrue(rendered.contains("Query user"));
         assertTrue(rendered.contains("/users/{id}"));
     }
+
+    @Test
+    void rendersSmallUtf8TemplateWithoutDependingOnPlatformDefaultCharset() {
+        assertTrue(FreeMarkerUtil.renderTemplate("encoding/utf8.ftl", Collections.emptyMap()).contains("中文内容"));
+    }
 }

@@ -31,9 +31,7 @@ public class ExceptionUtil {
         if (throwable instanceof CanIgnoreException) {
             logException(throwable, "");
         } else {
-            String addition = "可通过 IDEA 右下角感叹号, 点击 Report To Gudqs7(或 Report And Clear All) 一键上报到 GitHub Issue; " +
-                    "\n另外, 请在上报异常时, 填入您的联系信息, 或 issue 生成后点击进入页面留言以获得 issue 进展通知!" +
-                    "\n";
+            String addition = "请根据错误信息到项目公开 Issue 页面手动反馈；请勿提交密钥、令牌或其他敏感信息。\n";
             logException(throwable, addition);
             throw Lombok.sneakyThrow(throwable);
         }

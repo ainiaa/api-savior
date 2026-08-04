@@ -21,6 +21,7 @@ public final class RequestMappingResolver {
             AnnotationHolder.QNAME_OF_MAPPING,
             AnnotationHolder.QNAME_OF_GET_MAPPING,
             AnnotationHolder.QNAME_OF_POST_MAPPING,
+            AnnotationHolder.QNAME_OF_PATCH_MAPPING,
             AnnotationHolder.QNAME_OF_PUT_MAPPING,
             AnnotationHolder.QNAME_OF_DELETE_MAPPING,
             AnnotationHolder.QNAME_OF_GAGEWAY_GET_MAPPING,
@@ -107,12 +108,15 @@ public final class RequestMappingResolver {
         return methods;
     }
 
-    private static HttpMethod fixedMethod(String qName) {
+    static HttpMethod fixedMethod(String qName) {
         if (AnnotationHolder.QNAME_OF_GET_MAPPING.equals(qName) || AnnotationHolder.QNAME_OF_GAGEWAY_GET_MAPPING.equals(qName)) {
             return HttpMethod.GET;
         }
         if (AnnotationHolder.QNAME_OF_POST_MAPPING.equals(qName) || AnnotationHolder.QNAME_OF_GAGEWAY_POST_MAPPING.equals(qName)) {
             return HttpMethod.POST;
+        }
+        if (AnnotationHolder.QNAME_OF_PATCH_MAPPING.equals(qName)) {
+            return HttpMethod.PATCH;
         }
         if (AnnotationHolder.QNAME_OF_PUT_MAPPING.equals(qName) || AnnotationHolder.QNAME_OF_GAGEWAY_PUT_MAPPING.equals(qName)) {
             return HttpMethod.PUT;

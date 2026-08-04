@@ -1,18 +1,20 @@
 package cn.gudqs7.plugins.common.util.file;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.youbenzi.mdtool.export.Decorator;
 import com.youbenzi.mdtool.markdown.BlockType;
 import com.youbenzi.mdtool.markdown.MDToken;
 import com.youbenzi.mdtool.markdown.TableCellAlign;
 import com.youbenzi.mdtool.markdown.bean.Block;
 import com.youbenzi.mdtool.markdown.bean.ValuePart;
-import com.youbenzi.mdtool.tool.Tools;
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 在原来的基础上给 H1 添加了 id
@@ -20,6 +22,8 @@ import java.util.List;
  * @author WQ
  */
 public class HTMLDecorator implements Decorator {
+
+    private static final Logger LOG = Logger.getInstance(HTMLDecorator.class);
 
     public final String idPrefix;
 
@@ -62,28 +66,17 @@ public class HTMLDecorator implements Decorator {
 
                 content.append(str).append("\n");
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.warn("Failed to render Markdown block", e);
             }
         }
     }
 
     @Override
     public void afterWork(String outputFilePath) {
-        File file = new File(outputFilePath);
-        FileWriter writer = null;
         try {
-            writer = new FileWriter(file);
-            writer.write(content.toString());
+            Files.write(Path.of(outputFilePath), content.toString().getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (writer != null) {
-                    writer.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            LOG.warn("Failed to write HTML file", e);
         }
     }
 
@@ -96,8 +89,7 @@ public class HTMLDecorator implements Decorator {
         String value = valueParts[0].getValue();
         StringBuilder tmp = new StringBuilder("<pre>");
         tmp.append("<code class=\"language-json\">");
-        value = value.replaceAll("<", "&lt;");
-        value = value.replaceAll(">", "&gt;");
+        value = escapeHtml(value);
         if (value.endsWith("\n")) {
             value = value.substring(0, value.length() - "\n".length());
         }
@@ -114,7 +106,7 @@ public class HTMLDecorator implements Decorator {
             if (ArrayUtils.isNotEmpty(valueParts)) {
                 id = idPrefix + valueParts[0].getValue();
             }
-            return oneLineHtml(valueParts, "h" + level, "id='" + id + "'");
+            return oneLineHtml(valueParts, "h" + level, "id=\"" + escapeHtml(id) + "\"");
         } else {
             return oneLineHtml(valueParts, "h" + level);
         }
@@ -153,36 +145,25 @@ public class HTMLDecorator implements Decorator {
     private String formatByType(BlockType type, String value, ValuePart valuePart) {
         switch (type) {
             case BOLD_WORD:
-                value = value.replaceAll("<", "&lt;");
-                value = value.replaceAll(">", "&gt;");
                 return "<strong>" + value + "</strong>";
             case ITALIC_WORD:
-                value = value.replaceAll("<", "&lt;");
-                value = value.replaceAll(">", "&gt;");
                 return "<em>" + value + "</em>";
             case STRIKE_WORD:
-                value = value.replaceAll("<", "&lt;");
-                value = value.replaceAll(">", "&gt;");
                 return "<del>" + value + "</del>";
             case CODE_WORD:
-                value = value.replaceAll("<", "&lt;");
-                value = value.replaceAll(">", "&gt;");
                 return "<code>" + value + "</code>";
             case HEADLINE:
-                value = value.replaceAll("<", "&lt;");
-                value = value.replaceAll(">", "&gt;");
                 int level = valuePart.getLevel() + 1;
                 return "<h" + level + ">" + value + "</h" + level + ">";
             case LINK:
-                return "<a href=\"" + valuePart.getUrl() + "\" title=\"" + Tools.filterHtml(value) + "\">" + value + "</a>";
+                return "<a href=\"" + sanitizeUrl(valuePart.getUrl()) + "\" title=\"" + value
+                        + "\">" + value + "</a>";
             case IMG:
-                return "<img src=\"" + valuePart.getUrl() + "\" title=\"" + valuePart.getTitle() + "\" alt=\""
-                        + valuePart.getTitle() + "\" />";
+                return "<img src=\"" + sanitizeUrl(valuePart.getUrl()) + "\" title=\"" + escapeHtml(valuePart.getTitle())
+                        + "\" alt=\"" + escapeHtml(valuePart.getTitle()) + "\" />";
             case ROW:
                 return "<br/>";
             default:
-                value = value.replaceAll("<", "&lt;");
-                value = value.replaceAll(">", "&gt;");
                 return value;
         }
     }
@@ -203,8 +184,13 @@ public class HTMLDecorator implements Decorator {
             tmp.append("<tr>\n");
             List<Block> colDatas = tableData.get(i);
             for (int j = 0; j < nCols; j++) {
-                Block block = colDatas.get(j);
                 boolean head = (i == 0);
+                if (j >= colDatas.size()) {
+                    tmp.append(buildColBegin(head, TableCellAlign.NONE));
+                    tmp.append("</").append(head ? "th" : "td").append(">\n");
+                    continue;
+                }
+                Block block = colDatas.get(j);
                 tmp.append(buildColBegin(head, block.getAlign()));
                 try {
                     tmp.append(commonTextParagraph(colDatas.get(j).getValueParts(), false));
@@ -291,6 +277,7 @@ public class HTMLDecorator implements Decorator {
             if (hasLink(types)) {
                 value = valuePart.getTitle();
             }
+            value = escapeHtml(value);
             if (types != null) {
                 for (BlockType type : types) {
                     value = formatByType(type, value, valuePart);
@@ -314,6 +301,32 @@ public class HTMLDecorator implements Decorator {
             }
         }
         return false;
+    }
+
+    static String escapeHtml(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
+    static String sanitizeUrl(String url) {
+        if (url == null) {
+            return "";
+        }
+        String normalizedUrl = url.trim();
+        int colon = normalizedUrl.indexOf(':');
+        if (colon > 0) {
+            String scheme = normalizedUrl.substring(0, colon).toLowerCase(Locale.ROOT);
+            if (!"http".equals(scheme) && !"https".equals(scheme)) {
+                return "";
+            }
+        }
+        return escapeHtml(normalizedUrl);
     }
 
     public abstract class LineHelper {

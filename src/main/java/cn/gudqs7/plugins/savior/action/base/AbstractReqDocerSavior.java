@@ -5,7 +5,6 @@ import cn.gudqs7.plugins.common.pojo.resolver.StructureAndCommentInfo;
 import cn.gudqs7.plugins.common.resolver.structure.StructureAndCommentResolver;
 import cn.gudqs7.plugins.common.util.JsonUtil;
 import cn.gudqs7.plugins.common.util.file.FreeMarkerUtil;
-import cn.gudqs7.plugins.common.util.jetbrain.ClipboardUtil;
 import cn.gudqs7.plugins.common.util.structure.BaseTypeUtil;
 import cn.gudqs7.plugins.common.util.structure.PsiClassUtil;
 import cn.gudqs7.plugins.savior.pojo.FieldLevelInfo;
@@ -17,13 +16,13 @@ import cn.gudqs7.plugins.savior.theme.Theme;
 import cn.gudqs7.plugins.savior.util.RestfulUtil;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiClassType;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiType;
 import com.intellij.psi.impl.source.PsiClassReferenceType;
 import com.intellij.psi.search.GlobalSearchScope;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.HashMap;
 import java.util.List;
@@ -60,17 +59,16 @@ public abstract class AbstractReqDocerSavior extends AbstractOnRightClickSavior 
             notVisible(e);
             return;
         }
-        String presentableText = psiClass.getName();
         if (BaseTypeUtil.isBaseTypeOrObject(psiClass)) {
             notVisible(e);
         }
     }
 
     @Override
-    protected void handlePsiClass(Project project, PsiClass psiClass) {
+    protected Pair<String, String> handlePsiClassData(Project project, PsiClass psiClass) {
         String qualifiedName = psiClass.getQualifiedName();
         if (qualifiedName == null) {
-            return;
+            return null;
         }
         PsiClassType psiClassType = PsiType.getTypeByName(qualifiedName, project, GlobalSearchScope.allScope(project));
         if (psiClassType instanceof PsiClassReferenceType) {
@@ -97,10 +95,14 @@ public abstract class AbstractReqDocerSavior extends AbstractOnRightClickSavior 
             Map<String, Object> root = new HashMap<>();
             root.put("levelMap", levelMap);
             String template = FreeMarkerUtil.renderTemplate(theme.getFieldPath(), root);
-            ClipboardUtil.setSysClipboardText(java2json);
-            String message = "已自动的将示例复制到您的剪切板!\n您可以粘贴后再复制下面的参数说明Markdown";
-            Messages.showMultilineInputDialog(project, message, "可以粘贴(Ctrl+V)了", template, Messages.getInformationIcon(), null);
+            return Pair.of(java2json, template);
         }
+        return null;
+    }
+
+    @Override
+    protected String getTip() {
+        return "已自动的将示例复制到您的剪切板!\n您可以粘贴后再复制下面的参数说明Markdown";
     }
 
 }

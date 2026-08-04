@@ -136,8 +136,6 @@ public interface BaseGenerate {
             if (resolveClass.getQualifiedName() != null) {
                 newImportList.add(resolveClass.getQualifiedName());
             }
-        } else {
-            System.out.println(fieldTypeName + " ==> not basic type, not ReferenceType");
         }
         return Pair.of(fieldTypeName, right);
     }

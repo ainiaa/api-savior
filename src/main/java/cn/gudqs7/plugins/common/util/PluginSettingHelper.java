@@ -216,7 +216,7 @@ public class PluginSettingHelper {
         String configScope = getConfigScope(project, currentVirtualFile);
         VirtualFile cachedConfigFile = configFileCache.getConfigFile(configScope);
         if (cachedConfigFile != null && cachedConfigFile.exists()) {
-            return toMap(cachedConfigFile);
+            return getConfig(configFileCache, configScope, cachedConfigFile);
         }
         PsiFile[] filesByName = FilenameIndex.getFilesByName(project, CONFIG_FILE_PATH, GlobalSearchScope.projectScope(project));
         if (currentVirtualFile != null) {
@@ -224,7 +224,7 @@ public class PluginSettingHelper {
                 VirtualFile virtualFile = psiFile.getVirtualFile();
                 if (virtualFile != null && configScope.equals(getConfigScope(project, virtualFile))) {
                     configFileCache.setConfigFile(configScope, virtualFile);
-                    return toMap(virtualFile);
+                    return getConfig(configFileCache, configScope, virtualFile);
                 }
             }
         }
@@ -233,26 +233,19 @@ public class PluginSettingHelper {
         VirtualFile virtualFileByDefault = LocalFileSystem.getInstance().findFileByPath(defaultConfigPath);
         if (virtualFileByDefault != null) {
             configFileCache.setConfigFile(configScope, virtualFileByDefault);
-            return toMap(virtualFileByDefault);
-        }
-        if (filesByName.length > 0) {
-            VirtualFile back = null;
-            for (PsiFile psiFile : filesByName) {
-                VirtualFile virtualFile = psiFile.getVirtualFile();
-                if (virtualFile == null) {
-                    continue;
-                }
-
-                if (back == null) {
-                    back = virtualFile;
-                }
-            }
-            if (back != null) {
-                configFileCache.setConfigFile(configScope, back);
-                return toMap(back);
-            }
+            return getConfig(configFileCache, configScope, virtualFileByDefault);
         }
         return null;
+    }
+
+    private static Map<String, String> getConfig(ProjectConfigFileCache cache, String scope, VirtualFile configFile) throws IOException {
+        Map<String, String> cachedConfig = cache.getConfig(scope, configFile);
+        if (cachedConfig != null) {
+            return cachedConfig;
+        }
+        Map<String, String> config = toMap(configFile);
+        cache.setConfig(scope, configFile, config);
+        return config;
     }
 
     private static Map<String, String> toMap(VirtualFile configFile) throws IOException {

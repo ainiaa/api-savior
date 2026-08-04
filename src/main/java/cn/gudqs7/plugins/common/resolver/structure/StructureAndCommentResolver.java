@@ -415,8 +415,6 @@ public class StructureAndCommentResolver implements IStructureAndCommentResolver
                 }
             }
 
-        } else {
-            System.out.println(psiFieldType.getPresentableText() + " ==> not basic type, not ReferenceType");
         }
         return structureAndCommentInfo;
     }

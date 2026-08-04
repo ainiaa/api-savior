@@ -25,9 +25,12 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.psi.SmartPointerManager;
 import com.intellij.psi.SmartPsiElementPointer;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -139,8 +142,8 @@ public abstract class AbstractOnRightClickSavior extends AbstractAction implemen
             if (currentClass == null) {
                 throw new IllegalStateException("目标类已失效");
             }
-            return handlePsiClass0(project, currentClass);
-        });
+            return handlePsiClassData(project, currentClass);
+        }, data -> showGeneratedContent(project, data.getLeft(), data.getRight()));
     }
 
     /**
@@ -162,11 +165,11 @@ public abstract class AbstractOnRightClickSavior extends AbstractAction implemen
                 ExceptionUtil.handleSyntaxError(currentMethod.getName() + "'s Class");
             }
             return handlePsiMethod0(project, currentMethod, containingClass.getQualifiedName());
-        });
+        }, content -> showGeneratedContent(project, content, content));
     }
 
-    private void generateWithProgress(Project project, VirtualFile virtualFile, Supplier<String> contentSupplier) {
-        AtomicReference<String> content = new AtomicReference<>();
+    protected <T> void generateWithProgress(Project project, VirtualFile virtualFile, Supplier<T> contentSupplier, Consumer<T> contentConsumer) {
+        AtomicReference<T> content = new AtomicReference<>();
         AtomicReference<Throwable> error = new AtomicReference<>();
         ProgressManager.getInstance().run(new Task.Modal(project, "生成文档中...", true) {
             @Override
@@ -185,8 +188,21 @@ public abstract class AbstractOnRightClickSavior extends AbstractAction implemen
             ExceptionUtil.handleException(error.get());
             return;
         }
-        ClipboardUtil.setSysClipboardText(content.get());
-        DialogUtil.showDialog(project, getTip(), content.get());
+        T result = content.get();
+        if (result != null) {
+            contentConsumer.accept(result);
+        }
+    }
+
+    @Nullable
+    protected Pair<String, String> handlePsiClassData(Project project, PsiClass psiClass) {
+        String content = handlePsiClass0(project, psiClass);
+        return content == null ? null : Pair.of(content, content);
+    }
+
+    private void showGeneratedContent(Project project, String clipboardContent, String dialogContent) {
+        ClipboardUtil.setSysClipboardText(clipboardContent);
+        DialogUtil.showDialog(project, getTip(), dialogContent);
     }
 
     /**

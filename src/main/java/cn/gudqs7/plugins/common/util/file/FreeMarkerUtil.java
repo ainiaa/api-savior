@@ -6,9 +6,7 @@ import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import lombok.SneakyThrows;
 
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
+import java.io.StringWriter;
 
 /**
  * freemarker 模版渲染工具类
@@ -27,10 +25,9 @@ public class FreeMarkerUtil {
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
 
         Template temp = cfg.getTemplate(templateName);
-        ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream(4096);
-        Writer out = new OutputStreamWriter(arrayOutputStream);
+        StringWriter out = new StringWriter(4096);
         temp.process(root, out);
-        return arrayOutputStream.toString();
+        return out.toString();
     }
 
 }
