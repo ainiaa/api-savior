@@ -12,6 +12,7 @@ import com.intellij.psi.search.GlobalSearchScope;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.InputStream;
+import java.io.File;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -116,7 +117,7 @@ public class WebEnvironmentUtil {
                                 return port;
                             }
                         }
-                        if (backPort == null) {
+                        if (backPort == null && isProjectRootConfig(project, virtualFile)) {
                             backPort = port;
                         }
                     }
@@ -149,7 +150,7 @@ public class WebEnvironmentUtil {
                                         return port;
                                     }
                                 }
-                                if (backPort == null) {
+                                if (backPort == null && isProjectRootConfig(project, psiFile.getVirtualFile())) {
                                     backPort = port;
                                 }
                             }
@@ -170,6 +171,17 @@ public class WebEnvironmentUtil {
         VirtualFile sourceRoot = ProjectFileIndex.getInstance(project).getContentRootForFile(containingFile.getVirtualFile());
         VirtualFile configRoot = ProjectFileIndex.getInstance(project).getContentRootForFile(configFile);
         return sourceRoot != null && sourceRoot.equals(configRoot);
+    }
+
+    static boolean isProjectRootConfig(Project project, VirtualFile configFile) {
+        if (project == null || configFile == null) {
+            return false;
+        }
+        return isProjectRootConfig(project.getBasePath(), configFile.getPath());
+    }
+
+    static boolean isProjectRootConfig(String projectBasePath, String configPath) {
+        return projectBasePath != null && configPath != null && projectBasePath.equals(new File(configPath).getParent());
     }
 
 }

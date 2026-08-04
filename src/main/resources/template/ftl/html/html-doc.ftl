@@ -1,7 +1,7 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8"/>
-    <title>${title}</title>
+    <title>${title?html}</title>
     <style>
 
         :root {

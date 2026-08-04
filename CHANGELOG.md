@@ -37,5 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/
 - 转义 HTML 文本与属性、拒绝非 HTTP(S) 链接，并移除 Postman API 响应的标准输出日志。
 - Postman 参数读取器在缺失结构信息时返回空集合，避免调用方空指针异常。
 - FreeMarker 模板渲染不再依赖平台默认字符集或输出流刷新时机，确保中文文档内容稳定。
+- 多模块端口解析仅回退到项目根目录配置，避免将其他模块端口写入导出文档。
+- HTML 目录和标题模板转义动态字段，避免接口注释或模块名注入页面标记。
+- HTTP 导出请求限制响应体大小，避免异常服务端响应占用无界内存。
 
 [Unreleased]: https://github.com/ainiaa/api-savior/compare/v2.6.1...HEAD

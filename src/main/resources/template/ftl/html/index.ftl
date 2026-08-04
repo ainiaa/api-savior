@@ -37,17 +37,17 @@
     <h1>文档目录</h1>
 
 <#list moduleList as module>
-    <h2>${module.moduleName}</h2>
+    <h2>${module.moduleName?html}</h2>
     <dl>
     <#list module.fileDirList as fileDir>
         <dt>
-            <h3>${fileDir.fileName}</h3>
+            <h3>${fileDir.fileName?html}</h3>
         </dt>
         <dd>
             <ul>
             <#list fileDir.categoryItemList as categoryItem>
                 <li>
-                    <a target="_blank" href='${categoryItem.fullFileName}'>${categoryItem.apiName}</a>
+                    <a target="_blank" href='${categoryItem.fullFileName?html}'>${categoryItem.apiName?html}</a>
                 </li>
             </#list>
             </ul>

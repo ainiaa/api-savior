@@ -25,6 +25,7 @@ class HttpUtilTest {
             writeResponse(exchange, 200, exchange.getRequestMethod() + ":" + body);
         });
         server.createContext("/bad-request", exchange -> writeResponse(exchange, 400, "invalid request"));
+        server.createContext("/large", exchange -> writeResponse(exchange, 200, "12345"));
         server.createContext("/slow", exchange -> {
             try {
                 Thread.sleep(200);
@@ -55,6 +56,12 @@ class HttpUtilTest {
     void timesOutWhileWaitingForResponse() {
         assertThrows(RuntimeException.class,
                 () -> HttpUtil.sendHttpWithBody(url("/slow"), "GET", null, Collections.emptyMap(), 50));
+    }
+
+    @Test
+    void rejectsResponseLargerThanConfiguredLimit() {
+        assertThrows(RuntimeException.class,
+                () -> HttpUtil.sendHttpWithBody(url("/large"), "GET", null, Collections.emptyMap(), 1_000, 4));
     }
 
     private String url(String path) {
