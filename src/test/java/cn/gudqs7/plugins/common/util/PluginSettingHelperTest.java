@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -37,5 +38,13 @@ class PluginSettingHelperTest {
         } finally {
             PluginSettingHelper.clearConfigCache();
         }
+    }
+
+    @Test
+    void 应该_当后台线程加载配置时_通过读取入口执行() throws Exception {
+        assertEquals(
+                "withReadAccess",
+                PluginSettingHelper.class.getDeclaredMethod("withReadAccess", Supplier.class).getName()
+        );
     }
 }

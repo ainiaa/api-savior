@@ -11,6 +11,7 @@ import cn.gudqs7.plugins.common.util.JsonUtil;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
 import cn.gudqs7.plugins.common.util.api.HttpUtil;
 import cn.gudqs7.plugins.common.util.jetbrain.NotificationUtil;
+import cn.gudqs7.plugins.savior.pojo.ApiMethodInfo;
 import cn.gudqs7.plugins.savior.pojo.ComplexInfo;
 import cn.gudqs7.plugins.savior.pojo.FieldCommentInfo;
 import cn.gudqs7.plugins.savior.reader.Java2ComplexReader;
@@ -71,7 +72,13 @@ public class JavaToOneApiSavior extends AbstractSavior<Void> {
     }
 
     @Override
-    protected Void getDataByStructureAndCommentInfo(Project project, PsiMethod publicMethod, CommentInfo commentInfo, String interfaceClassName, StructureAndCommentInfo paramStructureAndCommentInfo, StructureAndCommentInfo returnStructureAndCommentInfo, Map<String, Object> param) {
+    protected Void getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param) {
+        Project project = apiMethodInfo.getProject();
+        PsiMethod publicMethod = apiMethodInfo.getPublicMethod();
+        CommentInfo commentInfo = apiMethodInfo.getCommentInfo();
+        String interfaceClassName = apiMethodInfo.getInterfaceClassName();
+        StructureAndCommentInfo paramStructureAndCommentInfo = apiMethodInfo.getParamStructureAndCommentInfo();
+        StructureAndCommentInfo returnStructureAndCommentInfo = apiMethodInfo.getReturnStructureAndCommentInfo();
         if (PluginSettingHelper.configNotExists()) {
             return null;
         }

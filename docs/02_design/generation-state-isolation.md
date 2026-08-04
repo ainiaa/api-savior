@@ -29,6 +29,8 @@
 
 批量和右键生成任务在后台线程开始时初始化配置，在 `finally` 中清理。请求/响应类型解析使用 `finally` 清理过滤上下文。
 
+配置文件定位依赖 `FilenameIndex`，因此 `PluginSettingHelper.initConfig` 必须在共享入口内通过 `ReadAction` 执行，不能依赖调用方恰好已持有读锁。
+
 ## 不在本次范围
 
 不提取 `ApiDefinition`，不重构批量导出器，不改变 Markdown、HTML、Postman、AMP 或 OneAPI 的格式逻辑。

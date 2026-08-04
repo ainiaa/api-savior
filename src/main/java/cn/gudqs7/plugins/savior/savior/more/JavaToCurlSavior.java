@@ -5,6 +5,7 @@ import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.pojo.resolver.RequestMapping;
 import cn.gudqs7.plugins.common.pojo.resolver.StructureAndCommentInfo;
 import cn.gudqs7.plugins.common.util.JsonUtil;
+import cn.gudqs7.plugins.savior.pojo.ApiMethodInfo;
 import cn.gudqs7.plugins.savior.pojo.PostmanKvInfo;
 import cn.gudqs7.plugins.savior.reader.Java2BulkReader;
 import cn.gudqs7.plugins.savior.savior.base.AbstractSavior;
@@ -43,7 +44,9 @@ public class JavaToCurlSavior extends AbstractSavior<String> {
     }
 
     @Override
-    protected String getDataByStructureAndCommentInfo(Project project, PsiMethod publicMethod, CommentInfo commentInfo, String interfaceClassName, StructureAndCommentInfo paramStructureAndCommentInfo, StructureAndCommentInfo returnStructureAndCommentInfo, Map<String, Object> param) {
+    protected String getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param) {
+        CommentInfo commentInfo = apiMethodInfo.getCommentInfo();
+        StructureAndCommentInfo paramStructureAndCommentInfo = apiMethodInfo.getParamStructureAndCommentInfo();
         String url = commentInfo.getUrl("");
         String contentType = commentInfo.getContentType(theme.getDefaultContentType());
         String method = commentInfo.getMethod("");

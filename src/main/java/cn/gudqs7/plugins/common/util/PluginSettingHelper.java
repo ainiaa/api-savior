@@ -2,6 +2,7 @@ package cn.gudqs7.plugins.common.util;
 
 import cn.gudqs7.plugins.common.enums.PluginSettingEnum;
 import cn.gudqs7.plugins.common.util.structure.BaseTypeParseUtil;
+import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * @author wq
@@ -198,8 +200,12 @@ public class PluginSettingHelper {
      * @param currentVirtualFile 与此文件同一个 src 下的优先
      */
     public static void initConfig(Project project, VirtualFile currentVirtualFile) {
-        Map<String, String> config = getConfigFromFile(project, currentVirtualFile);
+        Map<String, String> config = withReadAccess(() -> getConfigFromFile(project, currentVirtualFile));
         saveConfigToCache(config);
+    }
+
+    static <T> T withReadAccess(Supplier<T> supplier) {
+        return ReadAction.compute(supplier::get);
     }
 
     /**

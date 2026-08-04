@@ -8,6 +8,7 @@ import cn.gudqs7.plugins.common.resolver.structure.StructureAndCommentResolver;
 import cn.gudqs7.plugins.common.util.structure.PsiAnnotationUtil;
 import cn.gudqs7.plugins.common.util.structure.PsiClassUtil;
 import cn.gudqs7.plugins.common.util.structure.ResolverContextHolder;
+import cn.gudqs7.plugins.savior.pojo.ApiMethodInfo;
 import cn.gudqs7.plugins.savior.reader.Java2ApiReader;
 import cn.gudqs7.plugins.savior.reader.Java2MapReader;
 import cn.gudqs7.plugins.savior.theme.Theme;
@@ -124,6 +125,14 @@ public abstract class AbstractSavior<T> extends BaseSavior {
      * @return 想要的数据
      */
     protected T getDataByMethod(Project project, String interfaceClassName, PsiMethod publicMethod, Map<String, Object> param, boolean jumpHidden) {
+        ApiMethodInfo apiMethodInfo = resolveApiMethodInfo(project, interfaceClassName, publicMethod, jumpHidden);
+        if (apiMethodInfo == null) {
+            return null;
+        }
+        return getDataByStructureAndCommentInfo(apiMethodInfo, param);
+    }
+
+    protected ApiMethodInfo resolveApiMethodInfo(Project project, String interfaceClassName, PsiMethod publicMethod, boolean jumpHidden) {
         AnnotationHolder annotationHolder = AnnotationHolder.getPsiMethodHolder(publicMethod);
         CommentInfo commentInfo = annotationHolder.getCommentInfo();
 
@@ -161,28 +170,12 @@ public abstract class AbstractSavior<T> extends BaseSavior {
             ResolverContextHolder.removeAll();
         }
 
-        return getDataByStructureAndCommentInfo(
-                project, publicMethod, commentInfo, interfaceClassName,
-                paramStructureAndCommentInfo, returnStructureAndCommentInfo, param
+        return new ApiMethodInfo(
+                project, interfaceClassName, publicMethod, commentInfo,
+                paramStructureAndCommentInfo, returnStructureAndCommentInfo
         );
     }
 
-    /**
-     * 根据参数/返回值信息获取想要的数据
-     *
-     * @param project                       项目
-     * @param publicMethod                  方法
-     * @param commentInfo                   方法注释/注解信息
-     * @param interfaceClassName            接口类名
-     * @param paramStructureAndCommentInfo  参数注释+结构信息
-     * @param returnStructureAndCommentInfo 返回值注释+结构信息
-     * @param param                         配置参数
-     * @return 想要的数据
-     */
-    protected abstract T getDataByStructureAndCommentInfo(
-            Project project, PsiMethod publicMethod, CommentInfo commentInfo, String interfaceClassName,
-            StructureAndCommentInfo paramStructureAndCommentInfo,
-            StructureAndCommentInfo returnStructureAndCommentInfo,
-            Map<String, Object> param);
+    protected abstract T getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param);
 
 }

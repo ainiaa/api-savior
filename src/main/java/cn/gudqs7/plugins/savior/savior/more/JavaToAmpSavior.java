@@ -8,6 +8,7 @@ import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.pojo.resolver.StructureAndCommentInfo;
 import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
+import cn.gudqs7.plugins.savior.pojo.ApiMethodInfo;
 import cn.gudqs7.plugins.savior.pojo.ComplexInfo;
 import cn.gudqs7.plugins.savior.pojo.FieldCommentInfo;
 import cn.gudqs7.plugins.savior.reader.Java2ComplexReader;
@@ -72,7 +73,11 @@ public class JavaToAmpSavior extends AbstractSavior<Map<String, Object>> {
     }
 
     @Override
-    protected Map<String, Object> getDataByStructureAndCommentInfo(Project project, PsiMethod publicMethod, CommentInfo commentInfo, String interfaceClassName, StructureAndCommentInfo paramStructureAndCommentInfo, StructureAndCommentInfo returnStructureAndCommentInfo, Map<String, Object> param) {
+    protected Map<String, Object> getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param) {
+        PsiMethod publicMethod = apiMethodInfo.getPublicMethod();
+        CommentInfo commentInfo = apiMethodInfo.getCommentInfo();
+        StructureAndCommentInfo paramStructureAndCommentInfo = apiMethodInfo.getParamStructureAndCommentInfo();
+        StructureAndCommentInfo returnStructureAndCommentInfo = apiMethodInfo.getReturnStructureAndCommentInfo();
         if (PluginSettingHelper.configNotExists()) {
             return null;
         }

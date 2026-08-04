@@ -1,0 +1,77 @@
+{
+  "feature_id": "F20260803-205826",
+  "feature_name": "api-method-model",
+  "created_at": "2026-08-03T20:58:26+08:00",
+  "current_stage": "refactor_done",
+  "run_mode": "interactive",
+  "history": [
+    {
+      "stage": "analysis",
+      "done_at": "2026-08-03T20:58:26+08:00",
+      "produced": [],
+      "self_audit": { "passed": 3, "failed": 0, "manual": 0 },
+      "auto_decisions": [
+        {
+          "point": "P1 切分",
+          "chose": "先收敛共享 API 方法语义模型，批量导出编排在后续 P1.2 处理",
+          "at": "2026-08-03T20:58:26+08:00"
+        }
+      ]
+    },
+    {
+      "stage": "tdd",
+      "done_at": "2026-08-03T20:59:42+08:00",
+      "produced": ["src/test/java/cn/gudqs7/plugins/savior/pojo/ApiMethodInfoTest.java"],
+      "self_audit": { "passed": 1, "failed": 0, "manual": 0 },
+      "auto_decisions": [
+        {
+          "point": "红灯方式",
+          "chose": "先引用不存在的 API 语义模型，确认测试编译失败后再实现",
+          "at": "2026-08-03T20:59:42+08:00"
+        }
+      ]
+    },
+    {
+      "stage": "refactor",
+      "done_at": "2026-08-03T21:04:31+08:00",
+      "produced": [
+        "src/main/java/cn/gudqs7/plugins/savior/pojo/ApiMethodInfo.java",
+        "src/main/java/cn/gudqs7/plugins/savior/savior/base/AbstractSavior.java",
+        "src/main/java/cn/gudqs7/plugins/savior/savior/more/JavaToDocSavior.java",
+        "src/main/java/cn/gudqs7/plugins/savior/savior/more/JavaToPostmanSavior.java",
+        "src/main/java/cn/gudqs7/plugins/savior/savior/more/JavaToAmpSavior.java",
+        "src/main/java/cn/gudqs7/plugins/savior/savior/more/JavaToOneApiSavior.java",
+        "src/main/java/cn/gudqs7/plugins/savior/savior/more/JavaToCurlSavior.java"
+      ],
+      "self_audit": { "passed": 5, "failed": 0, "manual": 0 },
+      "auto_decisions": []
+    },
+    {
+      "stage": "verification",
+      "done_at": "2026-08-03T21:05:05+08:00",
+      "produced": [],
+      "self_audit": { "passed": 2, "failed": 0, "manual": 0 },
+      "auto_decisions": []
+    }
+  ],
+  "last_phase_result": {
+    "stage": "verification",
+    "ok": true,
+    "advanced_to": "review",
+    "checks": { "gradle_check": true },
+    "self_audit": { "failed": 0 },
+    "blocked_reason": null,
+    "run_mode": "interactive",
+    "at": "2026-08-03T21:05:05+08:00"
+  },
+  "relations": {
+    "extends": [],
+    "depends_on": ["B20260803-203714", "B20260803-205116"],
+    "supersedes": [],
+    "resolves": [],
+    "conflicts_with": [],
+    "relates_to": [],
+    "_updated_at": "2026-08-03T21:05:05+08:00"
+  },
+  "next_step": "pdlc-review"
+}

@@ -8,6 +8,7 @@ import cn.gudqs7.plugins.common.pojo.resolver.StructureAndCommentInfo;
 import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
 import cn.gudqs7.plugins.common.util.JsonUtil;
 import cn.gudqs7.plugins.common.util.file.FreeMarkerUtil;
+import cn.gudqs7.plugins.savior.pojo.ApiMethodInfo;
 import cn.gudqs7.plugins.savior.pojo.PostmanKvInfo;
 import cn.gudqs7.plugins.savior.reader.Java2BulkReader;
 import cn.gudqs7.plugins.savior.savior.base.AbstractSavior;
@@ -87,8 +88,13 @@ public class JavaToPostmanSavior extends AbstractSavior<Map<String, Object>> {
     }
 
     @Override
-    protected Map<String, Object> getDataByStructureAndCommentInfo(Project project, PsiMethod publicMethod, CommentInfo commentInfo, String interfaceClassName, StructureAndCommentInfo paramStructureAndCommentInfo, StructureAndCommentInfo returnStructureAndCommentInfo, Map<String, Object> param) {
-        Map<String, Object> data = javaToDocSavior.getDataByStructureAndCommentInfo(project, publicMethod, commentInfo, interfaceClassName, paramStructureAndCommentInfo, returnStructureAndCommentInfo, param);
+    protected Map<String, Object> getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param) {
+        Project project = apiMethodInfo.getProject();
+        PsiMethod publicMethod = apiMethodInfo.getPublicMethod();
+        CommentInfo commentInfo = apiMethodInfo.getCommentInfo();
+        StructureAndCommentInfo paramStructureAndCommentInfo = apiMethodInfo.getParamStructureAndCommentInfo();
+        StructureAndCommentInfo returnStructureAndCommentInfo = apiMethodInfo.getReturnStructureAndCommentInfo();
+        Map<String, Object> data = javaToDocSavior.getDataByStructureAndCommentInfo(apiMethodInfo, param);
         String template = FreeMarkerUtil.renderTemplate(theme.getMethodPath(), data);
 
         String url = commentInfo.getUrl("");

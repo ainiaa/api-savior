@@ -7,6 +7,7 @@ import cn.gudqs7.plugins.common.pojo.resolver.StructureAndCommentInfo;
 import cn.gudqs7.plugins.common.util.JsonUtil;
 import cn.gudqs7.plugins.common.util.StringTool;
 import cn.gudqs7.plugins.common.util.file.FreeMarkerUtil;
+import cn.gudqs7.plugins.savior.pojo.ApiMethodInfo;
 import cn.gudqs7.plugins.savior.pojo.FieldLevelInfo;
 import cn.gudqs7.plugins.savior.savior.base.AbstractSavior;
 import cn.gudqs7.plugins.savior.theme.Theme;
@@ -70,11 +71,13 @@ public class JavaToDocSavior extends AbstractSavior<Map<String, Object>> {
     }
 
     @Override
-    protected Map<String, Object> getDataByStructureAndCommentInfo(
-            Project project, PsiMethod publicMethod, CommentInfo commentInfo, String interfaceClassName,
-            StructureAndCommentInfo paramStructureAndCommentInfo,
-            StructureAndCommentInfo returnStructureAndCommentInfo,
-            Map<String, Object> param) {
+    protected Map<String, Object> getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param) {
+        Project project = apiMethodInfo.getProject();
+        PsiMethod publicMethod = apiMethodInfo.getPublicMethod();
+        CommentInfo commentInfo = apiMethodInfo.getCommentInfo();
+        String interfaceClassName = apiMethodInfo.getInterfaceClassName();
+        StructureAndCommentInfo paramStructureAndCommentInfo = apiMethodInfo.getParamStructureAndCommentInfo();
+        StructureAndCommentInfo returnStructureAndCommentInfo = apiMethodInfo.getReturnStructureAndCommentInfo();
         Map<String, List<FieldLevelInfo>> paramLevelMap = java2ApiReader.read(paramStructureAndCommentInfo);
         Map<String, List<FieldLevelInfo>> returnLevelMap = java2ApiReader.read(returnStructureAndCommentInfo);
         Map<String, Object> java2jsonMap = java2JsonReader.read(paramStructureAndCommentInfo);
