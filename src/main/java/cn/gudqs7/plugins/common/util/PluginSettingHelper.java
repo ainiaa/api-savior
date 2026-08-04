@@ -1,10 +1,10 @@
 package cn.gudqs7.plugins.common.util;
 
 import cn.gudqs7.plugins.common.enums.PluginSettingEnum;
+import cn.gudqs7.plugins.common.context.GenerationContext;
 import cn.gudqs7.plugins.common.util.structure.BaseTypeParseUtil;
 import com.intellij.openapi.application.ReadAction;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 public class PluginSettingHelper {
 
     private static final String CONFIG_FILE_PATH = "docer-config.properties";
-    private static final ThreadLocal<Map<String, String>> CONFIG = ThreadLocal.withInitial(() -> new HashMap<>(16));
+    private static final ThreadLocal<GenerationContext> CONTEXT = ThreadLocal.withInitial(GenerationContext::empty);
 
     /**
      * 将配置保存到缓存
@@ -34,18 +34,22 @@ public class PluginSettingHelper {
      * @param config 配置
      */
     public static void saveConfigToCache(Map<String, String> config) {
-        Map<String, String> currentConfig = CONFIG.get();
-        currentConfig.clear();
-        if (config != null) {
-            currentConfig.putAll(config);
-        }
+        useContext(GenerationContext.of(config));
+    }
+
+    public static void useContext(GenerationContext context) {
+        CONTEXT.set(context == null ? GenerationContext.empty() : context);
+    }
+
+    public static GenerationContext currentContext() {
+        return CONTEXT.get();
     }
 
     /**
      * 清除配置缓存
      */
     public static void clearConfigCache() {
-        CONFIG.remove();
+        CONTEXT.remove();
     }
 
     /**
@@ -54,7 +58,7 @@ public class PluginSettingHelper {
      * @return boolean
      */
     public static boolean configExists() {
-        return !CONFIG.get().isEmpty();
+        return !currentContext().isEmpty();
     }
 
     /**
@@ -133,7 +137,7 @@ public class PluginSettingHelper {
         if (configNotExists()) {
             return defaultVal;
         }
-        return CONFIG.get().getOrDefault(key, defaultVal);
+        return currentContext().get(key, defaultVal);
     }
 
     /**
@@ -195,8 +199,11 @@ public class PluginSettingHelper {
      * @param currentVirtualFile 与此文件同一个 src 下的优先
      */
     public static void initConfig(Project project, VirtualFile currentVirtualFile) {
-        Map<String, String> config = withReadAccess(() -> getConfigFromFile(project, currentVirtualFile));
-        saveConfigToCache(config);
+        useContext(resolveContext(project, currentVirtualFile));
+    }
+
+    public static GenerationContext resolveContext(Project project, VirtualFile currentVirtualFile) {
+        return GenerationContext.of(withReadAccess(() -> getConfigFromFile(project, currentVirtualFile)));
     }
 
     static <T> T withReadAccess(Supplier<T> supplier) {
@@ -262,14 +269,7 @@ public class PluginSettingHelper {
     }
 
     private static String getConfigScope(Project project, VirtualFile virtualFile) {
-        if (virtualFile != null) {
-            VirtualFile contentRoot = ProjectFileIndex.getInstance(project).getContentRootForFile(virtualFile);
-            if (contentRoot != null) {
-                return contentRoot.getPath();
-            }
-        }
-        String basePath = project.getBasePath();
-        return basePath == null ? "" : basePath;
+        return ModuleScope.of(project, virtualFile);
     }
 
     // endregion init config

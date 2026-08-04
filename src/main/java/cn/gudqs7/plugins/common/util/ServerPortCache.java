@@ -2,8 +2,6 @@ package cn.gudqs7.plugins.common.util;
 
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ProjectFileIndex;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 
@@ -38,14 +36,7 @@ public final class ServerPortCache implements Disposable {
     }
 
     private String scope(PsiFile containingFile) {
-        if (containingFile != null && containingFile.getVirtualFile() != null) {
-            VirtualFile contentRoot = ProjectFileIndex.getInstance(project).getContentRootForFile(containingFile.getVirtualFile());
-            if (contentRoot != null) {
-                return contentRoot.getPath();
-            }
-        }
-        String basePath = project.getBasePath();
-        return basePath == null ? "" : basePath;
+        return ModuleScope.of(project, containingFile == null ? null : containingFile.getVirtualFile());
     }
 
     private static final class Entry {

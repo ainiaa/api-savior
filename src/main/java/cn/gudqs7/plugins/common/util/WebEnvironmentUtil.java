@@ -4,7 +4,6 @@ import cn.gudqs7.plugins.common.enums.PluginSettingEnum;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.ProjectFileIndex;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.search.FilenameIndex;
@@ -165,12 +164,7 @@ public class WebEnvironmentUtil {
     }
 
     private static boolean sameContentRoot(Project project, PsiFile containingFile, VirtualFile configFile) {
-        if (containingFile == null || containingFile.getVirtualFile() == null || configFile == null) {
-            return false;
-        }
-        VirtualFile sourceRoot = ProjectFileIndex.getInstance(project).getContentRootForFile(containingFile.getVirtualFile());
-        VirtualFile configRoot = ProjectFileIndex.getInstance(project).getContentRootForFile(configFile);
-        return sourceRoot != null && sourceRoot.equals(configRoot);
+        return containingFile != null && ModuleScope.same(project, containingFile.getVirtualFile(), configFile);
     }
 
     static boolean isProjectRootConfig(Project project, VirtualFile configFile) {

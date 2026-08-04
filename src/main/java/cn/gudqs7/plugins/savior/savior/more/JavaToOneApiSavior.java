@@ -130,6 +130,11 @@ public class JavaToOneApiSavior extends AbstractSavior<JavaToOneApiSavior.OneApi
         if (noMain && noTag) {
             return null;
         }
+        Integer catalogIdValue = parsePositiveInteger(catalogId);
+        Integer dataSizeValue = noTag ? 0 : parsePositiveInteger(dataSize);
+        if (catalogIdValue == null || dataSizeValue == null) {
+            return null;
+        }
 
         Map<String, Object> returnJava2jsonMap = java2ComplexReader.read(returnStructureAndCommentInfo);
         //noinspection unchecked
@@ -138,8 +143,8 @@ public class JavaToOneApiSavior extends AbstractSavior<JavaToOneApiSavior.OneApi
         Map<String, Object> java2jsonMap = noMain ? Collections.emptyMap() : java2ComplexReader.read(paramStructureAndCommentInfo);
         boolean create = StringUtils.isBlank(mode) || "create".equals(mode);
         String mainBody = noMain ? null : createMainRequestBody(java2jsonMap, returnJava2jsonMap, interfaceName,
-                projectCode, catalogId, create ? defaultTagName : currentTag, apiName);
-        String tagBody = noTag ? null : createTagRequestBody(returnJava2jsonMap, projectCode, defaultTagName, apiName, dataSize);
+                projectCode, catalogIdValue, create ? defaultTagName : currentTag, apiName);
+        String tagBody = noTag ? null : createTagRequestBody(returnJava2jsonMap, projectCode, defaultTagName, apiName, dataSizeValue);
         return new OneApiRequest(actionName, create ? createUrl : updateUrl, updateTagUrl, mainBody, tagBody, header);
     }
 
@@ -167,7 +172,7 @@ public class JavaToOneApiSavior extends AbstractSavior<JavaToOneApiSavior.OneApi
         }
     }
 
-    private String createTagRequestBody(Map<String, Object> resultJava2json, String projectCode, String defaultTagName, String apiName, String dataSize) {
+    private String createTagRequestBody(Map<String, Object> resultJava2json, String projectCode, String defaultTagName, String apiName, int dataSize) {
         Map<String, Object> data = getResultExample(resultJava2json, dataSize, true);
         Map<String, Object> tagResponse = new LinkedHashMap<>(8);
         tagResponse.put("successResponse", true);
@@ -230,7 +235,7 @@ public class JavaToOneApiSavior extends AbstractSavior<JavaToOneApiSavior.OneApi
     }
 
     private String createMainRequestBody(Map<String, Object> java2json, Map<String, Object> resultJava2json, String interfaceName,
-                                         String projectCode, String catalogId, String currentTag, String apiName) {
+                                         String projectCode, int catalogId, String currentTag, String apiName) {
         List<Map<String, Object>> requestParamList = getRequestParamList(java2json);
         List<Map<String, Object>> responseParamList = getResponseParamList(resultJava2json);
         Map<String, Object> creator = new LinkedHashMap<>(32);
@@ -240,8 +245,8 @@ public class JavaToOneApiSavior extends AbstractSavior<JavaToOneApiSavior.OneApi
 
         Map<String, Object> requestBody = new LinkedHashMap<>(32);
         requestBody.put("_csrf", "");
-        requestBody.put("pid", Integer.parseInt(catalogId));
-        requestBody.put("catalogId", Integer.parseInt(catalogId));
+        requestBody.put("pid", catalogId);
+        requestBody.put("catalogId", catalogId);
         requestBody.put("projectCode", projectCode);
         requestBody.put("apiName", apiName);
         requestBody.put("method", "ALL");
@@ -284,7 +289,7 @@ public class JavaToOneApiSavior extends AbstractSavior<JavaToOneApiSavior.OneApi
     }
 
     @NotNull
-    private Map<String, Object> getResultExample(Map<String, Object> resultJava2json, String dataSize, boolean needUpper) {
+    Map<String, Object> getResultExample(Map<String, Object> resultJava2json, int dataSize, boolean needUpper) {
         Map<String, Object> map = new LinkedHashMap<>(8);
 
         for (Map.Entry<String, Object> entry : resultJava2json.entrySet()) {
@@ -296,7 +301,7 @@ public class JavaToOneApiSavior extends AbstractSavior<JavaToOneApiSavior.OneApi
         return map;
     }
 
-    private void getMapByVal(String dataSize, Map<String, Object> map, String key, Object value, boolean needUpper) {
+    private void getMapByVal(int dataSize, Map<String, Object> map, String key, Object value, boolean needUpper) {
         String upperKey = key;
         if (needUpper) {
             upperKey = key.substring(0, 1).toUpperCase() + key.substring(1);
@@ -316,29 +321,34 @@ public class JavaToOneApiSavior extends AbstractSavior<JavaToOneApiSavior.OneApi
             // only first level need upper
             map.put(upperKey, getResultExample(mapValue, dataSize, false));
         } else if (value instanceof List) {
-            List list = (List) value;
-            if (list.size() >= 1) {
-                Object val = list.get(0);
-                if (StringUtils.isNotBlank(dataSize)) {
-                    list.clear();
-                    int dataSize0 = Integer.parseInt(dataSize);
-                    for (int i = 0; i < dataSize0; i++) {
-                        Map<String, Object> map0 = new LinkedHashMap<>(8);
-                        getMapByVal(dataSize, map0, key, val, false);
-                        if (map0.keySet().size() > 0) {
-                            String afterKey = new ArrayList<>(map0.keySet()).get(0);
-                            Object afterVal = map0.get(afterKey);
-                            if (afterVal != null) {
-                                list.add(afterVal);
-                            }
+            List<?> sourceList = (List<?>) value;
+            List<Object> exampleList = new ArrayList<>();
+            if (!sourceList.isEmpty()) {
+                Object val = sourceList.get(0);
+                for (int i = 0; i < dataSize; i++) {
+                    Map<String, Object> map0 = new LinkedHashMap<>(8);
+                    getMapByVal(dataSize, map0, key, val, false);
+                    if (!map0.isEmpty()) {
+                        Object afterVal = map0.values().iterator().next();
+                        if (afterVal != null) {
+                            exampleList.add(afterVal);
                         }
                     }
-                    if (list.size() == 0) {
-                        list.add(val);
-                    }
+                }
+                if (exampleList.isEmpty()) {
+                    exampleList.add(val);
                 }
             }
-            map.put(upperKey, list);
+            map.put(upperKey, exampleList);
+        }
+    }
+
+    static Integer parsePositiveInteger(String value) {
+        try {
+            int parsed = Integer.parseInt(value.trim());
+            return parsed > 0 ? parsed : null;
+        } catch (RuntimeException ignored) {
+            return null;
         }
     }
 

@@ -108,83 +108,102 @@ public abstract class AbstractBatchDocerSavior<S> extends AbstractAction impleme
         }
         psiClassList = getPsiClassList(e, project, psiDirectory, psiClassList);
         if (!CollectionUtils.isEmpty(psiClassList)) {
-            PsiClass firstClass = new ArrayList<>(psiClassList).get(0);
-            VirtualFile configVirtualFile = firstClass.getContainingFile().getVirtualFile();
-            initConfig(e, project, psiElement, configVirtualFile);
-            final Set<PsiClass> finalPsiClassList = psiClassList;
+            runBatch(project, createBatchPlan(e, project, psiElement, psiClassList));
+        }
+    }
 
-            String dirPrefix = getDirPrefix();
-            String dirRoot = PluginSettingHelper.getConfigItem(PluginSettingEnum.DIR_ROOT, "api-doc");
-            String overrideDir = PluginSettingHelper.getConfigItem(PluginSettingEnum.PREFIX_DIR.getSettingKey() + dirPrefix);
-            if (StringUtils.isNotBlank(overrideDir)) {
-                dirRoot = overrideDir;
-            } else {
-                dirRoot = dirRoot + File.separator + dirPrefix;
-            }
+    private BatchPlan createBatchPlan(AnActionEvent event, Project project, PsiElement psiElement, Set<PsiClass> psiClasses) {
+        PsiClass firstClass = new ArrayList<>(psiClasses).get(0);
+        VirtualFile configVirtualFile = firstClass.getContainingFile().getVirtualFile();
+        initConfig(event, project, psiElement, configVirtualFile);
+        String dirPrefix = getDirPrefix();
+        String dirRoot = PluginSettingHelper.getConfigItem(PluginSettingEnum.DIR_ROOT, "api-doc");
+        String overrideDir = PluginSettingHelper.getConfigItem(PluginSettingEnum.PREFIX_DIR.getSettingKey() + dirPrefix);
+        if (StringUtils.isNotBlank(overrideDir)) {
+            dirRoot = overrideDir;
+        } else {
+            dirRoot = dirRoot + File.separator + dirPrefix;
+        }
+        String projectPath = project.getBasePath();
+        String documentRoot = projectPath + File.separator + dirRoot;
+        return new BatchPlan(psiClasses, configVirtualFile, dirRoot, documentRoot,
+                documentRoot + ".api-savior-tmp-" + UUID.randomUUID(), projectPath);
+    }
 
-            String projectFilePath = project.getBasePath();
-            String docRootDirPath = projectFilePath + File.separator + dirRoot;
-            String stagingDocRootDirPath = docRootDirPath + ".api-savior-tmp-" + UUID.randomUUID();
-            String title = getModelTitle();
-            AtomicBoolean hasCancelAtomic = new AtomicBoolean(false);
-            String finalDirRoot = dirRoot;
-            ProgressManager.getInstance().run(new Task.Modal(project, title, true) {
-                @Override
-                public void run(@NotNull ProgressIndicator indicator) {
-                    try (GenerationSession ignored = GenerationSession.open(project, configVirtualFile)) {
-                        indicator.setIndeterminate(false);
-                        indicator.setText(getProcessorModelTitle());
-                        indicator.setText2(getProcessorModelSubTitle());
-                        indicator.setFraction(0.05f);
-
-                        // region loop
-                        float i = 1f;
-                        int size = finalPsiClassList.size();
-                        S state = createState();
-                        Set<String> outputPaths = new HashSet<>();
-                        runLoopBefore(project, indicator, hasCancelAtomic, finalPsiClassList, stagingDocRootDirPath, state);
-                        for (PsiClass psiClass0 : finalPsiClassList) {
-                            indicator.checkCanceled();
-                            BatchClassInfo batchClassInfo = IdeaApplicationUtil.computeReadAction(
-                                    () -> createBatchClassInfo(project, psiClass0)
-                            );
-                            if (batchClassInfo == null) {
-                                continue;
-                            }
-
-                            String moduleName = batchClassInfo.moduleName;
-                            String fileParentDir = finalDirRoot + File.separator + moduleName;
-                            File parent = new File(stagingDocRootDirPath, moduleName);
-                            String fileName = batchClassInfo.fileName;
-                            String fullFileName = uniqueFullFileName(fileParentDir, fileName, getFileExtension(), batchClassInfo.qualifiedName, outputPaths);
-                            float fraction = i++ / size;
-                            runLoop(project, psiClass0, hasCancelAtomic, moduleName, fileName, parent, fileParentDir, fullFileName, state, indicator, fraction);
-                        }
-                        runLoopAfter(project, indicator, hasCancelAtomic, finalPsiClassList, stagingDocRootDirPath, state);
-                        // endregion loop
-                        commitDocRoot(stagingDocRootDirPath, docRootDirPath);
-                        indicator.setText(getProcessFinishedModelTitle());
-                        indicator.setText2(getProcessFinishedModelSubTitle());
-                        indicator.setFraction(1f);
-                        refreshProject(projectFilePath);
-                    } catch (ProcessCanceledException canceledException) {
-                        hasCancelAtomic.set(true);
-                        handleCancelTask(stagingDocRootDirPath, projectFilePath);
-                    } catch (Throwable e1) {
-                        if (e1 instanceof Error) {
-                            throw (Error) e1;
-                        }
-                        hasCancelAtomic.set(true);
-                        handleCancelTask(stagingDocRootDirPath, projectFilePath);
-                        ExceptionUtil.handleException(e1);
+    private void runBatch(Project project, BatchPlan plan) {
+        AtomicBoolean cancelled = new AtomicBoolean(false);
+        ProgressManager.getInstance().run(new Task.Modal(project, getModelTitle(), true) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                try (GenerationSession ignored = GenerationSession.open(project, plan.configVirtualFile)) {
+                    indicator.setIndeterminate(false);
+                    indicator.setText(getProcessorModelTitle());
+                    indicator.setText2(getProcessorModelSubTitle());
+                    indicator.setFraction(0.05f);
+                    runBatchLoop(project, plan, cancelled, indicator);
+                    commitDocRoot(plan.stagingRoot, plan.documentRoot);
+                    indicator.setText(getProcessFinishedModelTitle());
+                    indicator.setText2(getProcessFinishedModelSubTitle());
+                    indicator.setFraction(1f);
+                    refreshProject(plan.projectPath);
+                } catch (ProcessCanceledException cancelledException) {
+                    cancelled.set(true);
+                    handleCancelTask(plan.stagingRoot, plan.projectPath);
+                } catch (Throwable throwable) {
+                    if (throwable instanceof Error) {
+                        throw (Error) throwable;
                     }
+                    cancelled.set(true);
+                    handleCancelTask(plan.stagingRoot, plan.projectPath);
+                    ExceptionUtil.handleException(throwable);
                 }
-            });
-            boolean hasCancel = hasCancelAtomic.get();
-            if (!hasCancel) {
-                ClipboardUtil.setSysClipboardText(docRootDirPath);
-                DialogUtil.showDialog(project, getDialogTip(), docRootDirPath);
             }
+        });
+        if (!cancelled.get()) {
+            ClipboardUtil.setSysClipboardText(plan.documentRoot);
+            DialogUtil.showDialog(project, getDialogTip(), plan.documentRoot);
+        }
+    }
+
+    private void runBatchLoop(Project project, BatchPlan plan, AtomicBoolean cancelled, ProgressIndicator indicator) throws Throwable {
+        float index = 1f;
+        int size = plan.psiClasses.size();
+        S state = createState();
+        Set<String> outputPaths = new HashSet<>();
+        runLoopBefore(project, indicator, cancelled, plan.psiClasses, plan.stagingRoot, state);
+        for (PsiClass psiClass : plan.psiClasses) {
+            indicator.checkCanceled();
+            BatchClassInfo classInfo = IdeaApplicationUtil.computeReadAction(() -> createBatchClassInfo(project, psiClass));
+            if (classInfo == null) {
+                continue;
+            }
+            String moduleName = classInfo.moduleName;
+            String fileParentDir = plan.directoryRoot + File.separator + moduleName;
+            String fileName = classInfo.fileName;
+            String fullFileName = uniqueFullFileName(fileParentDir, fileName, getFileExtension(), classInfo.qualifiedName, outputPaths);
+            runLoop(project, psiClass, cancelled, moduleName, fileName, new File(plan.stagingRoot, moduleName), fileParentDir,
+                    fullFileName, state, indicator, index++ / size);
+        }
+        runLoopAfter(project, indicator, cancelled, plan.psiClasses, plan.stagingRoot, state);
+    }
+
+    private static final class BatchPlan {
+
+        private final Set<PsiClass> psiClasses;
+        private final VirtualFile configVirtualFile;
+        private final String directoryRoot;
+        private final String documentRoot;
+        private final String stagingRoot;
+        private final String projectPath;
+
+        private BatchPlan(Set<PsiClass> psiClasses, VirtualFile configVirtualFile, String directoryRoot,
+                          String documentRoot, String stagingRoot, String projectPath) {
+            this.psiClasses = psiClasses;
+            this.configVirtualFile = configVirtualFile;
+            this.directoryRoot = directoryRoot;
+            this.documentRoot = documentRoot;
+            this.stagingRoot = stagingRoot;
+            this.projectPath = projectPath;
         }
     }
 

@@ -5,6 +5,7 @@ import cn.gudqs7.plugins.common.enums.MoreCommentTagEnum;
 import cn.gudqs7.plugins.common.enums.PluginSettingEnum;
 import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
 import cn.gudqs7.plugins.common.util.PluginSettingHelper;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiType;
 import lombok.Data;
@@ -24,6 +25,7 @@ import java.util.function.Function;
  */
 public class BaseTypeUtil {
 
+    private static final Logger LOG = Logger.getInstance(BaseTypeUtil.class);
     private static final Map<String, TypeInfo> JAVA_BASE_TYPE_MAP = new HashMap<>(32);
     private static final Map<String, TypeInfo> OTHER_BASE_TYPE_MAP = new HashMap<>(32);
     private static final Map<String, TypeInfo> OTHER_INTERFACE_MAP = new HashMap<>(32);
@@ -388,7 +390,7 @@ public class BaseTypeUtil {
             return 'Q';
         }
         boolean en = RandomUtils.nextBoolean();
-        return randomChar(true);
+        return randomChar(en);
     }
 
     private static char randomChar(boolean en) {
@@ -418,7 +420,8 @@ public class BaseTypeUtil {
             try {
                 str = new String(b, "GBK");
             } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+                LOG.warn("GBK charset is unavailable; falling back to an ASCII character", e);
+                return (char) RandomUtils.nextInt(97, 122);
             }
             return str.charAt(0);
         }

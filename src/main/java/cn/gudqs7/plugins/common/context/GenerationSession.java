@@ -12,12 +12,19 @@ import com.intellij.openapi.vfs.VirtualFile;
  */
 public final class GenerationSession implements AutoCloseable {
 
+    private final GenerationContext context;
+
     private GenerationSession(Project project, VirtualFile contextFile) {
-        PluginSettingHelper.initConfig(project, contextFile);
+        context = PluginSettingHelper.resolveContext(project, contextFile);
+        PluginSettingHelper.useContext(context);
     }
 
     public static GenerationSession open(Project project, VirtualFile contextFile) {
         return new GenerationSession(project, contextFile);
+    }
+
+    public GenerationContext getContext() {
+        return context;
     }
 
     @Override

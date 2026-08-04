@@ -3,6 +3,7 @@ package cn.gudqs7.plugins.common.util;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import cn.gudqs7.plugins.common.context.GenerationContext;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
@@ -38,6 +39,15 @@ class PluginSettingHelperTest {
         } finally {
             PluginSettingHelper.clearConfigCache();
         }
+    }
+
+    @Test
+    void 应该_将可变配置快照为生成上下文() {
+        PluginSettingHelper.saveConfigToCache(Collections.singletonMap("host", "snapshot"));
+
+        GenerationContext context = PluginSettingHelper.currentContext();
+
+        assertEquals("snapshot", context.get("host", "default"));
     }
 
     @Test

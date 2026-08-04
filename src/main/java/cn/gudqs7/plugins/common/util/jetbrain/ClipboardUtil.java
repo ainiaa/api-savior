@@ -1,5 +1,7 @@
 package cn.gudqs7.plugins.common.util.jetbrain;
 
+import com.intellij.openapi.diagnostic.Logger;
+
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
@@ -11,6 +13,8 @@ import java.awt.datatransfer.Transferable;
  * @date 2022/4/13
  */
 public class ClipboardUtil {
+
+    private static final Logger LOG = Logger.getInstance(ClipboardUtil.class);
 
     /**
      * 从剪切板获得文字。
@@ -28,7 +32,7 @@ public class ClipboardUtil {
                     ret = (String) clipTf
                             .getTransferData(DataFlavor.stringFlavor);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LOG.warn("Failed to read system clipboard", e);
                 }
             }
         }

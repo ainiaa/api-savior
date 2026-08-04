@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/
 
 ### Changed
 
+- 文档生成使用不可变 `GenerationContext` 快照，并统一模块范围计算；批量导出拆分为计划创建、后台执行和循环处理阶段。
 - 请求参数文档生成复用统一后台会话：在 Read Action 中完成 PSI 解析，完成后再更新剪贴板与对话框。
 - 固定插件字节码为 Java 11，并将 Lombok 升级为仅编译期依赖，以兼容新版本 JDK 构建环境与旧版 IDEA 运行环境。
 - 使用无溢出的整数比较排序 API 方法，并将文档文件写入改为自动关闭文件流。
@@ -40,5 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/
 - 多模块端口解析仅回退到项目根目录配置，避免将其他模块端口写入导出文档。
 - HTML 目录和标题模板转义动态字段，避免接口注释或模块名注入页面标记。
 - HTTP 导出请求限制响应体大小，避免异常服务端响应占用无界内存。
+- OneAPI 导出校验目录 ID 与 Mock 数据量配置，并避免生成 Mock 时修改源列表。
+- 剪贴板与随机中文示例的异常改用 IDEA 日志记录，移除直接堆栈输出。
 
 [Unreleased]: https://github.com/ainiaa/api-savior/compare/v2.6.1...HEAD
