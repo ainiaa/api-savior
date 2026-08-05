@@ -1,13 +1,19 @@
 package cn.gudqs7.plugins.savior.savior.base;
 
 import cn.gudqs7.plugins.common.enums.MoreCommentTagEnum;
+import cn.gudqs7.plugins.common.consts.MapKeyConstant;
 import cn.gudqs7.plugins.common.pojo.resolver.CommentInfo;
+import cn.gudqs7.plugins.common.pojo.resolver.ResponseCodeInfo;
 import cn.gudqs7.plugins.common.pojo.resolver.StructureAndCommentInfo;
 import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
 import cn.gudqs7.plugins.common.resolver.structure.StructureAndCommentResolver;
+import cn.gudqs7.plugins.common.util.JsonUtil;
+import cn.gudqs7.plugins.common.util.StringTool;
 import cn.gudqs7.plugins.common.util.structure.PsiAnnotationUtil;
 import cn.gudqs7.plugins.common.util.structure.PsiClassUtil;
+import cn.gudqs7.plugins.savior.pojo.ApiDocument;
 import cn.gudqs7.plugins.savior.pojo.ApiMethodInfo;
+import cn.gudqs7.plugins.savior.pojo.FieldLevelInfo;
 import cn.gudqs7.plugins.savior.reader.Java2ApiReader;
 import cn.gudqs7.plugins.savior.reader.Java2MapReader;
 import cn.gudqs7.plugins.savior.theme.Theme;
@@ -162,6 +168,38 @@ public abstract class AbstractSavior<T> extends BaseSavior {
         resolver.setProject(project);
         resolver.setFieldFilter(hiddenKeys, onlyKeys);
         return resolver;
+    }
+
+    protected ApiDocument createApiDocument(ApiMethodInfo apiMethodInfo) {
+        Project project = apiMethodInfo.getProject();
+        PsiMethod publicMethod = apiMethodInfo.getPublicMethod();
+        CommentInfo commentInfo = apiMethodInfo.getCommentInfo();
+        String interfaceClassName = apiMethodInfo.getInterfaceClassName();
+        StructureAndCommentInfo paramStructure = apiMethodInfo.getParamStructureAndCommentInfo();
+        StructureAndCommentInfo returnStructure = apiMethodInfo.getReturnStructureAndCommentInfo();
+        Map<String, List<FieldLevelInfo>> paramLevelMap = java2ApiReader.read(paramStructure);
+        Map<String, List<FieldLevelInfo>> returnLevelMap = java2ApiReader.read(returnStructure);
+        Map<String, Object> paramJson = java2JsonReader.read(paramStructure);
+        Map<String, Object> returnJson = java2JsonReader.read(returnStructure);
+        String paramJsonText = JsonUtil.toJson(paramJson);
+        String returnJsonText = JsonUtil.toJson(returnJson.getOrDefault(MapKeyConstant.RETURN_FIELD_NAME, new Object()));
+
+        String methodName = publicMethod.getName();
+        ApiDocument document = new ApiDocument();
+        document.setInterfaceName(StringTool.replaceMd(commentInfo.getValue(methodName)));
+        document.setInterfaceNotes(commentInfo.getNotes(""));
+        document.setQualifiedMethodName(interfaceClassName + "#" + methodName);
+        document.setUrl(commentInfo.getUrl(""));
+        document.setMethod(commentInfo.getMethod(""));
+        document.setContentType(commentInfo.getContentType(theme.getDefaultContentType()));
+        document.setParamLevelMap(paramLevelMap);
+        document.setReturnLevelMap(returnLevelMap);
+        document.setJsonExample(paramJsonText);
+        document.setReturnJsonExample(returnJsonText);
+        document.setResponseCodeInfoList(commentInfo.getResponseCodeInfoList());
+        theme.afterCollectData(document, project, publicMethod, interfaceClassName, commentInfo,
+                paramStructure, returnStructure, paramJson, returnJson, paramJsonText, returnJsonText);
+        return document;
     }
 
     protected abstract T getDataByStructureAndCommentInfo(ApiMethodInfo apiMethodInfo, Map<String, Object> param);

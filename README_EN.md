@@ -85,7 +85,7 @@ At this point you can search and jump to the interface by url or interface descr
 [Click to visit Github Issue](https://github.com/gudqs7-idea-plugins/api-savior/issues)
 > Everyone is welcome to ask questions, and everyone is welcome to improve it together!
 
-**In addition, I have connected to the error handling component of IDEA, so when I find an error message from the plugin, follow the IDEA prompt to view the error information and report it to me with one click (that is, an issue is automatically generated)**
+IDEA displays plugin exceptions. To report one, please create an issue manually and do not include keys, tokens, or other sensitive information.
 
 ## See the wiki for more instructions
 

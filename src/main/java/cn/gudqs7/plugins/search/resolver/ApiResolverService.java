@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
 import com.intellij.psi.impl.java.stubs.index.JavaAnnotationIndex;
 import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.psi.util.PsiTreeUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -34,17 +35,27 @@ public class ApiResolverService {
     @NotNull
     public List<ApiNavigationItem> getApiNavigationItemList() {
         List<ApiNavigationItem> navigationItemList = new ArrayList<>();
-        String[] supportAnnotations = new String[]{"Controller", "RestController"};
         Set<PsiClass> psiClassSet = new LinkedHashSet<>();
-        for (String supportAnnotation : supportAnnotations) {
+        Deque<String> annotationNames = new ArrayDeque<>(Arrays.asList("Controller", "RestController"));
+        Set<String> visitedAnnotationNames = new HashSet<>();
+        while (!annotationNames.isEmpty()) {
+            String supportAnnotation = annotationNames.removeFirst();
+            if (!visitedAnnotationNames.add(supportAnnotation)) {
+                continue;
+            }
             Collection<PsiAnnotation> psiAnnotations = JavaAnnotationIndex.getInstance().get(supportAnnotation, project, GlobalSearchScope.projectScope(project));
             for (PsiAnnotation psiAnnotation : psiAnnotations) {
-                PsiElement parent = psiAnnotation.getParent();
-                if (parent instanceof PsiModifierList) {
-                    PsiElement psiElement = parent.getParent();
-                    if (psiElement instanceof PsiClass) {
-                        psiClassSet.add((PsiClass) psiElement);
+                PsiClass psiClass = PsiTreeUtil.getParentOfType(psiAnnotation, PsiClass.class);
+                if (psiClass == null) {
+                    continue;
+                }
+                if (psiClass.isAnnotationType()) {
+                    String annotationName = psiClass.getName();
+                    if (annotationName != null) {
+                        annotationNames.addLast(annotationName);
                     }
+                } else {
+                    psiClassSet.add(psiClass);
                 }
             }
         }

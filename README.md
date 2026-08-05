@@ -87,7 +87,7 @@ git clone https://github.com/gudqs7-idea-plugins/api-savior-examples
  [点击访问 Github Issue](https://github.com/gudqs7-idea-plugins/api-savior/issues)  
 > 欢迎大家提问，欢迎大家一起完善它！
 
-**另外，我接入了 IDEA 的错误处理组件，因此当发现插件报错提示时，按照 IDEA 提示，可查看错误信息，并一键上报给我（即自动生成一个 Issue）**
+插件异常会由 IDEA 显示；如需反馈，请手动提交 Issue，并注意不要附带密钥、令牌或其他敏感信息。
 
 ## 通过查看 Wiki 来获取更多说明
 

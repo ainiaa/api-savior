@@ -20,7 +20,7 @@
         <notificationGroup displayType="STICKY_BALLOON" id="Api Savior Error" bundle="group" key="notification.group.error.name"/>
 
         <projectService serviceImplementation="cn.gudqs7.plugins.search.MethodFilterConfiguration"/>
-        <projectService serviceImplementation="cn.gudqs7.plugins.search.ApiIndexService"/>
+        <projectService serviceImplementation="cn.gudqs7.plugins.search.ApiIndexService" preload="true"/>
         <projectService serviceImplementation="cn.gudqs7.plugins.common.util.ProjectConfigFileCache"/>
         <projectService serviceImplementation="cn.gudqs7.plugins.common.util.ServerPortCache"/>
 

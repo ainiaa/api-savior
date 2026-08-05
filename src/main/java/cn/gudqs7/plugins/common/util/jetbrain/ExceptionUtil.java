@@ -1,27 +1,26 @@
 package cn.gudqs7.plugins.common.util.jetbrain;
 
 import cn.gudqs7.plugins.common.base.error.CanIgnoreException;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.project.IndexNotReadyException;
 import lombok.Lombok;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 /**
  * @author wq
  */
 public class ExceptionUtil {
 
+    private static final Logger LOG = Logger.getInstance(ExceptionUtil.class);
+
     public static void logException(Throwable throwable) {
         logException(throwable, "");
     }
 
     public static void logException(Throwable throwable, String addition) {
-        StringWriter writer = new StringWriter();
-        throwable.printStackTrace(new PrintWriter(writer));
-        String stackTrace = writer.getBuffer().toString();
-        NotificationUtil.showError("插件运行失败, " + addition + "错误信息如下: " + stackTrace);
+        LOG.error(throwable);
+        NotificationUtil.showError("插件运行失败, " + addition + "详细错误信息已写入 IDEA 日志。");
     }
 
     public static void handleException(Throwable throwable) {

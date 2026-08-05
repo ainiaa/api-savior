@@ -9,6 +9,7 @@ import cn.gudqs7.plugins.common.resolver.comment.AnnotationHolder;
 import cn.gudqs7.plugins.common.util.jetbrain.ExceptionUtil;
 import cn.gudqs7.plugins.common.util.structure.*;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.psi.*;
@@ -30,6 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2022/4/4
  */
 public class StructureAndCommentResolver implements IStructureAndCommentResolver {
+
+    private static final Logger LOG = Logger.getInstance(StructureAndCommentResolver.class);
 
     private Project project;
     private List<String> hiddenKeys = Collections.emptyList();
@@ -254,10 +257,10 @@ public class StructureAndCommentResolver implements IStructureAndCommentResolver
                         }
                     }
                 } else {
-                    System.err.println("findFileByUrl - not found :: " + sourcePath);
+                    LOG.debug("Source file not found: " + sourcePath);
                 }
             } else {
-                System.err.println("containingFile is null :: " + psiClass.getQualifiedName());
+                LOG.debug("Containing file is unavailable for " + psiClass.getQualifiedName());
             }
         }
         return null;

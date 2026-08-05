@@ -102,18 +102,21 @@ public abstract class AbstractPostfixTemplate extends PostfixTemplateWithExpress
      * @param editor     编辑器
      */
     protected void removeExpressionFromEditor(@NotNull PsiElement expression, @NotNull Editor editor) {
-        while (!(expression.getParent() instanceof PsiCodeBlock)) {
+        while (expression != null && !(expression.getParent() instanceof PsiCodeBlock)) {
             expression = expression.getParent();
+        }
+        if (expression == null) {
+            return;
         }
         Document document = editor.getDocument();
         TextRange textRange = expression.getTextRange();
-        int endOffset = textRange.getEndOffset();
-        String text = document.getText(new TextRange(endOffset, endOffset + 1));
-        boolean expressionEndWithSemicolon = ";".equals(text);
-        if (expressionEndWithSemicolon) {
-            endOffset = endOffset + 1;
-        }
+        int endOffset = removalEndOffset(document.getCharsSequence(), textRange.getEndOffset());
         document.deleteString(textRange.getStartOffset(), endOffset);
+    }
+
+    static int removalEndOffset(CharSequence documentText, int expressionEndOffset) {
+        return expressionEndOffset < documentText.length() && documentText.charAt(expressionEndOffset) == ';'
+                ? expressionEndOffset + 1 : expressionEndOffset;
     }
 
     protected void destroy(PsiElement expression, Editor editor) {

@@ -41,7 +41,7 @@ flowchart LR
 | `search` | 扫描 Spring Controller 并提供 URL 导航 | 项目级、可失效搜索快照 | Search Everywhere / Go To Action |
 | `common.util` | 配置、端口、文件、JSON/YAML、IDE 平台适配 | 项目级缓存与受控线程状态 | 项目配置和应用配置读取 |
 
-当前抽象边界为：PSI 只在解析与主题补充阶段使用；模板渲染以无 PSI 的 `ApiDocument` 为根对象；文件、剪贴板和 HTTP 输出在解析完成后执行。`GenerationSession` 是 ThreadLocal 清理的唯一编排入口，避免一次生成遗留到线程复用后的下一次任务。
+当前抽象边界为：PSI 只在解析与主题补充阶段使用；`AbstractSavior#createApiDocument` 统一构建无 PSI 的 `ApiDocument`，Markdown 与 Postman 复用这一模型；文件、剪贴板和 HTTP 输出在解析完成后执行。`GenerationSession` 是 ThreadLocal 清理的唯一编排入口，避免一次生成遗留到线程复用后的下一次任务。
 
 ## 3. 通信机制
 
@@ -67,7 +67,7 @@ flowchart LR
 
 - 运行单位是单个 IDEA 项目，扩展方式不是横向扩容，而是减少 UI 阻塞、缩小 PSI 读区间并复用可失效的项目级快照。
 - 批量文档生成统一经过 Action 编排和 `GenerationSession`，新导出格式应复用 `AbstractSavior`、`Theme` 和已有输出路径，而不是新增平行的 PSI 扫描流程。
-- 当前 API 搜索会扫描项目范围内的 Spring Controller；大型项目的主要容量风险是索引扫描与全量导出时间，而非网络或存储吞吐。
+- API 搜索服务在项目变为 Smart 后预热不可变快照，并扫描直接或组合的 Spring Controller；大型项目的主要容量风险是索引扫描与全量导出时间，而非网络或存储吞吐。
 
 ## 7. 架构评分
 
@@ -83,7 +83,7 @@ flowchart LR
 
 | 优先级 | 问题 | 建议 |
 |--------|------|------|
-| P1 | `Theme` 与部分导出回调仍直接接收 PSI，模型与 IDEA 平台未完全解耦。 | 仅在出现第三种文档输出或需要脱离 IDEA 复用时，再将主题补充所需字段并入不可变模型；当前不做额外抽象。 |
+| P1 | `Theme` 与 AMP、OneAPI、cURL 等格式专用导出仍直接接收 PSI。 | 仅在需要脱离 IDEA 复用或抽取第三个共享输出模型时，将主题补充字段并入不可变模型；不为格式差异创建空泛导出框架。 |
 | P1 | API 搜索与映射解析主要依赖 IDEA 索引，缺少真实 IDE 自动化回归。 | 为典型 Spring 多模块样例建立手工验证清单；升级 IDEA 基线时安装 ZIP 验证搜索与生成 Action。 |
 | P2 | 运行期错误只能依靠通知和日志定位，无法快速判断慢路径。 | 在批量扫描、模板渲染和远端 HTTP 失败点补充耗时与上下文日志，注意脱敏。 |
 | P2 | 配置与端口缓存基于全局 PSI 修改计数，任意 PSI 修改都可能导致重新读取。 | 只有在大型项目中确认该失效频率造成可见延迟时，再改为配置文件级别的修改追踪。 |

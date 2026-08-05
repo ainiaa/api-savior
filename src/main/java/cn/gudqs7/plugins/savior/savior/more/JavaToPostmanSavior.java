@@ -30,12 +30,10 @@ import java.util.*;
 public class JavaToPostmanSavior extends AbstractSavior<Map<String, Object>> {
 
     private final Java2BulkReader java2BulkReader;
-    private final JavaToDocSavior javaToDocSavior;
 
     public JavaToPostmanSavior(Theme theme) {
         super(theme);
         java2BulkReader = new Java2BulkReader(theme);
-        javaToDocSavior = new JavaToDocSavior(theme);
     }
 
     public Map<String, Object> generatePostmanItem(PsiClass psiClass, Project project) {
@@ -95,7 +93,7 @@ public class JavaToPostmanSavior extends AbstractSavior<Map<String, Object>> {
         CommentInfo commentInfo = apiMethodInfo.getCommentInfo();
         StructureAndCommentInfo paramStructureAndCommentInfo = apiMethodInfo.getParamStructureAndCommentInfo();
         StructureAndCommentInfo returnStructureAndCommentInfo = apiMethodInfo.getReturnStructureAndCommentInfo();
-        ApiDocument document = javaToDocSavior.getDataByStructureAndCommentInfo(apiMethodInfo, param);
+        ApiDocument document = createApiDocument(apiMethodInfo);
         String template = FreeMarkerUtil.renderTemplate(theme.getMethodPath(), document);
 
         String url = commentInfo.getUrl("");

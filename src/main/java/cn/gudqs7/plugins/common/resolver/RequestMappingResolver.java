@@ -6,11 +6,14 @@ import cn.gudqs7.plugins.common.util.structure.PsiAnnotationUtil;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiMethod;
+import com.intellij.psi.PsiModifierList;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Spring and gateway endpoint mapping reader. Call only while read access is held.
@@ -48,23 +51,35 @@ public final class RequestMappingResolver {
 
     public static List<MappingInfo> resolveMethodMappings(PsiMethod psiMethod) {
         List<MappingInfo> mappings = new ArrayList<>();
-        for (String qName : MAPPING_QNAMES) {
-            PsiAnnotation annotation = psiMethod.getAnnotation(qName);
-            if (annotation != null) {
-                mappings.add(new MappingInfo(paths(annotation), methods(annotation, qName), params(annotation)));
+        for (PsiAnnotation annotation : psiMethod.getAnnotations()) {
+            PsiAnnotation mappingAnnotation = findMappingAnnotation(annotation, new HashSet<>());
+            if (mappingAnnotation != null) {
+                mappings.add(new MappingInfo(paths(annotation, mappingAnnotation),
+                        methods(mappingAnnotation, mappingAnnotation.getQualifiedName()),
+                        params(annotation, mappingAnnotation)));
             }
         }
         return mappings;
     }
 
     public static List<String> resolveClassPaths(PsiClass psiClass) {
-        PsiAnnotation annotation = psiClass.getAnnotation(AnnotationHolder.QNAME_OF_MAPPING);
-        return annotation == null ? Collections.singletonList("") : paths(annotation);
+        for (PsiAnnotation annotation : psiClass.getAnnotations()) {
+            PsiAnnotation mappingAnnotation = findMappingAnnotation(annotation, new HashSet<>());
+            if (mappingAnnotation != null) {
+                return paths(annotation, mappingAnnotation);
+            }
+        }
+        return Collections.singletonList("");
     }
 
     public static List<String> resolveClassParams(PsiClass psiClass) {
-        PsiAnnotation annotation = psiClass.getAnnotation(AnnotationHolder.QNAME_OF_MAPPING);
-        return annotation == null ? Collections.emptyList() : params(annotation);
+        for (PsiAnnotation annotation : psiClass.getAnnotations()) {
+            PsiAnnotation mappingAnnotation = findMappingAnnotation(annotation, new HashSet<>());
+            if (mappingAnnotation != null) {
+                return params(annotation, mappingAnnotation);
+            }
+        }
+        return Collections.emptyList();
     }
 
     public static String joinPaths(String classPath, String methodPath) {
@@ -79,17 +94,65 @@ public final class RequestMappingResolver {
         return normalizedClassPath + normalizedMethodPath;
     }
 
-    private static List<String> paths(PsiAnnotation annotation) {
-        List<String> paths = PsiAnnotationUtil.getAnnotationListValue(annotation, "value", null);
-        if (CollectionUtils.isEmpty(paths)) {
-            paths = PsiAnnotationUtil.getAnnotationListValue(annotation, "path", null);
+    private static List<String> paths(PsiAnnotation annotation, PsiAnnotation mappingAnnotation) {
+        List<String> paths = pathValues(annotation);
+        if (CollectionUtils.isEmpty(paths) && annotation != mappingAnnotation) {
+            paths = pathValues(mappingAnnotation);
         }
         return CollectionUtils.isEmpty(paths) ? Collections.singletonList("") : paths;
     }
 
-    private static List<String> params(PsiAnnotation annotation) {
+    private static List<String> pathValues(PsiAnnotation annotation) {
+        List<String> paths = PsiAnnotationUtil.getAnnotationListValue(annotation, "value", null);
+        if (CollectionUtils.isEmpty(paths)) {
+            paths = PsiAnnotationUtil.getAnnotationListValue(annotation, "path", null);
+        }
+        return paths;
+    }
+
+    private static List<String> params(PsiAnnotation annotation, PsiAnnotation mappingAnnotation) {
         List<String> params = PsiAnnotationUtil.getAnnotationListValue(annotation, "params", null);
+        if (CollectionUtils.isEmpty(params) && annotation != mappingAnnotation) {
+            params = PsiAnnotationUtil.getAnnotationListValue(mappingAnnotation, "params", null);
+        }
         return params == null ? Collections.emptyList() : params;
+    }
+
+    private static PsiAnnotation findMappingAnnotation(PsiAnnotation annotation, Set<PsiClass> visitedTypes) {
+        if (visitedTypes.size() >= 8) {
+            return null;
+        }
+        String qualifiedName = annotation.getQualifiedName();
+        if (isMappingAnnotation(qualifiedName)) {
+            return annotation;
+        }
+        PsiClass annotationType = annotation.resolveAnnotationType();
+        if (annotationType == null || !visitedTypes.add(annotationType)) {
+            return null;
+        }
+        PsiModifierList modifierList = annotationType.getModifierList();
+        if (modifierList == null) {
+            return null;
+        }
+        for (PsiAnnotation metaAnnotation : modifierList.getAnnotations()) {
+            PsiAnnotation mappingAnnotation = findMappingAnnotation(metaAnnotation, visitedTypes);
+            if (mappingAnnotation != null) {
+                return mappingAnnotation;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isMappingAnnotation(String qualifiedName) {
+        if (qualifiedName == null) {
+            return false;
+        }
+        for (String mappingQName : MAPPING_QNAMES) {
+            if (mappingQName.equals(qualifiedName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static List<HttpMethod> methods(PsiAnnotation annotation, String qName) {
