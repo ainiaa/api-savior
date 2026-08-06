@@ -22,6 +22,8 @@ import java.util.*;
  */
 public class ApiResolverService {
 
+    static final int MAX_COMPOSED_CONTROLLER_DEPTH = 8;
+
     private final Project project;
 
     public ApiResolverService(Project project) {
@@ -37,12 +39,12 @@ public class ApiResolverService {
         List<ApiNavigationItem> navigationItemList = new ArrayList<>();
         Set<PsiClass> psiClassSet = new LinkedHashSet<>();
         Deque<String> annotationNames = new ArrayDeque<>(Arrays.asList("Controller", "RestController"));
-        Set<String> visitedAnnotationNames = new HashSet<>();
+        Map<String, Integer> annotationDepths = new HashMap<>();
+        annotationDepths.put("Controller", 0);
+        annotationDepths.put("RestController", 0);
         while (!annotationNames.isEmpty()) {
             String supportAnnotation = annotationNames.removeFirst();
-            if (!visitedAnnotationNames.add(supportAnnotation)) {
-                continue;
-            }
+            int depth = annotationDepths.get(supportAnnotation);
             Collection<PsiAnnotation> psiAnnotations = JavaAnnotationIndex.getInstance().get(supportAnnotation, project, GlobalSearchScope.projectScope(project));
             for (PsiAnnotation psiAnnotation : psiAnnotations) {
                 PsiClass psiClass = PsiTreeUtil.getParentOfType(psiAnnotation, PsiClass.class);
@@ -51,7 +53,9 @@ public class ApiResolverService {
                 }
                 if (psiClass.isAnnotationType()) {
                     String annotationName = psiClass.getName();
-                    if (annotationName != null) {
+                    if (annotationName != null && depth < MAX_COMPOSED_CONTROLLER_DEPTH
+                            && !annotationDepths.containsKey(annotationName)) {
+                        annotationDepths.put(annotationName, depth + 1);
                         annotationNames.addLast(annotationName);
                     }
                 } else {

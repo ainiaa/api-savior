@@ -4,7 +4,6 @@ import cn.gudqs7.plugins.common.enums.HttpMethod;
 import cn.gudqs7.plugins.common.util.jetbrain.ExceptionUtil;
 import cn.gudqs7.plugins.search.icon.IconHolder;
 import cn.gudqs7.plugins.search.resolver.ApiNavigationItem;
-import cn.gudqs7.plugins.search.resolver.ApiResolverService;
 import com.intellij.ide.actions.SearchEverywherePsiRenderer;
 import com.intellij.ide.actions.bigPopup.ShowFilterAction;
 import com.intellij.ide.actions.searcheverywhere.FoundItemDescriptor;
@@ -49,7 +48,6 @@ public class ApiSearchContributor implements WeightedSearchEverywhereContributor
     private final AnActionEvent actionEvent;
     private final Project myProject;
     private PersistentSearchEverywhereContributorFilter<HttpMethod> myFilter;
-    private List<ApiNavigationItem> navItemList;
 
     public ApiSearchContributor(@NotNull AnActionEvent event) {
         this.actionEvent = event;
@@ -177,21 +175,13 @@ public class ApiSearchContributor implements WeightedSearchEverywhereContributor
             }
             boolean selectAll = httpMethodSet.size() == HttpMethod.values().length;
 
-            // 从ALL -> URL Tab或快捷键进入时列表为空
-            if (navItemList == null) {
-                // 必须从read线程访问，耗时不能过长
-                navItemList = ApplicationManager.getApplication().runReadAction(
-                        (Computable<List<ApiNavigationItem>>) () ->
-                                myProject.getService(ApiIndexService.class).getItems()
-                );
-            }
-            if (navItemList != null) {
-                for (ApiNavigationItem restItem : navItemList) {
-                    if (selectAll || httpMethodSet.contains(restItem.getHttpMethod())) {
-                        if (matcher.matches(restItem.getUrl()) || matcher.matches(restItem.getMethodPathInfo().getMethodDesc())) {
-                            if (!consumer.process(new FoundItemDescriptor<>(restItem, 0))) {
-                                return;
-                            }
+            List<ApiNavigationItem> navItemList = ApplicationManager.getApplication().runReadAction(
+                    (Computable<List<ApiNavigationItem>>) () -> myProject.getService(ApiIndexService.class).getItems());
+            for (ApiNavigationItem restItem : navItemList) {
+                if (selectAll || httpMethodSet.contains(restItem.getHttpMethod())) {
+                    if (matcher.matches(restItem.getUrl()) || matcher.matches(restItem.getMethodPathInfo().getMethodDesc())) {
+                        if (!consumer.process(new FoundItemDescriptor<>(restItem, 0))) {
+                            return;
                         }
                     }
                 }

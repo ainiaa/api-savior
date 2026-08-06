@@ -6,6 +6,7 @@
 
 - 安装 ZIP 并重启 IDE，确认插件加载且没有 `NoClassDefFoundError`、线程访问断言或初始化异常。
 - 对带有 `@GetMapping`、`@PostMapping`、`@PutMapping`、`@PatchMapping`、`@DeleteMapping` 的控制器分别执行单接口和类级文档生成，确认请求方法和路径正确。
+- 对自定义的组合 `@Controller` / `@RestController` 与组合 Mapping 注解执行文档生成和 API 搜索，确认可以识别；注解链不应超过 8 层。
 - 执行 Postman、Markdown、AMP、OneAPI 与 cURL 导出，确认内容一致且剪贴板、文件写入和提示在任务结束后正常完成。
 
 ## 多模块与配置
@@ -19,3 +20,4 @@
 - 在接口说明、链接和图片标题中包含 `<`、`&`、引号及 `javascript:` URL，导出的 HTML 应显示为文本，不能执行脚本。
 - 生成包含列数不一致的 Markdown 表格，确认导出不失败。
 - 连续批量生成并取消一次任务，确认 IDE 无 EDT/ReadAction 异常、界面无卡死，后续生成仍可正常执行。
+- 保持 Search Everywhere 的 Api 页签打开，新增或修改一个 Controller Mapping 后继续输入搜索词，确认结果立即反映最新路径。

@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/lang/zh-CN/
 - 支持 Spring `@PatchMapping` 的接口识别与 HTTP 方法导出。
 - 支持 Spring 组合映射注解（元注解为 `@RequestMapping` 或各 HTTP 方法映射）的接口识别。
 - Postfix 模板删除原表达式时正确处理文件末尾和不在代码块内的 PSI，避免越界或空指针。
+- API 搜索 Contributor 不再持有过期的接口列表，打开搜索窗口后修改 Mapping 可立即得到最新结果。
 - 消除多模块缺少同模块配置时随机回退到其他模块配置的行为。
 - 转义 HTML 文本与属性、拒绝非 HTTP(S) 链接，并移除 Postman API 响应的标准输出日志。
 - Postman 参数读取器在缺失结构信息时返回空集合，避免调用方空指针异常。
