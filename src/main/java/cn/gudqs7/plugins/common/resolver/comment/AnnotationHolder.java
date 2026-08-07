@@ -31,6 +31,7 @@ public interface AnnotationHolder {
 
     String QNAME_OF_PUT_MAPPING = "org.springframework.web.bind.annotation.PutMapping";
     String QNAME_OF_DELETE_MAPPING = "org.springframework.web.bind.annotation.DeleteMapping";
+    String QNAME_OF_FEIGN_CLIENT = "org.springframework.cloud.openfeign.FeignClient";
     String QNAME_OF_REQ_PARAM = "org.springframework.web.bind.annotation.RequestParam";
     String QNAME_OF_REQUEST_BODY = "org.springframework.web.bind.annotation.RequestBody";
     String QNAME_OF_MULTIPART_FILE = "org.springframework.web.multipart.MultipartFile";

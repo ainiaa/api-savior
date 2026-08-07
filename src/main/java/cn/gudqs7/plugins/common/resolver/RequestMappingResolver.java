@@ -69,6 +69,13 @@ public final class RequestMappingResolver {
                 return paths(annotation, mappingAnnotation);
             }
         }
+        PsiAnnotation feignClient = psiClass.getAnnotation(AnnotationHolder.QNAME_OF_FEIGN_CLIENT);
+        if (feignClient != null) {
+            List<String> paths = PsiAnnotationUtil.getAnnotationListValue(feignClient, "path", null);
+            if (CollectionUtils.isNotEmpty(paths)) {
+                return paths;
+            }
+        }
         return Collections.singletonList("");
     }
 
